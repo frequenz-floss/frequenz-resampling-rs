@@ -1,23 +1,51 @@
+// License: MIT
+// Copyright © 2024 Frequenz Energy-as-a-Service GmbH
+
+/*!
 # frequenz-resampling-rs
 
-This project is the rust resampler for resampling a stream of samples to a given interval.
+This project is the rust resampler for resampling a stream of samples to a
+given interval.
 
 ## Usage
 
-To resample a vector of samples to a given interval, you can use the `Resampler` struct.
-The construction of a resampler expects an interval (`TimeDelta`) and a
-`ResamplingFunction`.
-Moreover, the `max_age_in_intervals` parameter can be used to control the maximum age of a sample.
-If set to 0, all samples are skipped.
-The `start` parameter is used to set the start time of the first resampled sample.
+An instance of the [`Resampler`] can be created with the
+[`new`][Resampler::new] method.
+Raw data can be added to the resampler either through the
+[`push`][Resampler::push] or [`extend`][Resampler::extend] methods, and the
+[`resample`][Resampler::resample] method resamples the data that was added to
+the buffer.
 
 ```rust
-use chrono::{DateTime, TimeDelta};
+use chrono::{DateTime, TimeDelta, Utc};
 use frequenz_resampling::{Resampler, ResamplingFunction, Sample};
+
+#[derive(Debug, Clone, Default, Copy, PartialEq)]
+pub(crate) struct TestSample {
+    timestamp: DateTime<Utc>,
+    value: Option<f64>,
+}
+
+impl Sample for TestSample {
+    type Value = f64;
+
+    fn new(timestamp: DateTime<Utc>, value: Option<f64>) -> Self {
+        Self { timestamp, value }
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn value(&self) -> Option<f64> {
+        self.value
+    }
+}
 
 let start = DateTime::from_timestamp(0, 0).unwrap();
 let mut resampler: Resampler<f64, TestSample> =
     Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start);
+
 let step = TimeDelta::seconds(1);
 let data = vec![
     TestSample::new(start, Some(1.0)),
@@ -32,7 +60,7 @@ let data = vec![
     TestSample::new(start + step * 9, Some(10.0)),
 ];
 
-resampler.extend(&data);
+resampler.extend(data);
 
 let resampled = resampler.resample(start + step * 10);
 
@@ -43,3 +71,11 @@ let expected = vec![
 
 assert_eq!(resampled, expected);
 ```
+*/
+
+mod resampler;
+
+#[cfg(test)]
+mod tests;
+
+pub use resampler::{Resampler, ResamplingFunction, Sample};
