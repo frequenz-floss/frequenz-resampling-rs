@@ -254,8 +254,7 @@ pub(crate) fn epoch_align(
     timestamp: DateTime<Utc>,
     alignment_timestamp: Option<DateTime<Utc>>,
 ) -> DateTime<Utc> {
-    let alignment_timestamp =
-        alignment_timestamp.unwrap_or_else(|| DateTime::from_timestamp_millis(0).unwrap());
+    let alignment_timestamp = alignment_timestamp.unwrap_or(DateTime::UNIX_EPOCH);
     DateTime::from_timestamp_millis(
         (timestamp.timestamp_millis() / interval.num_milliseconds()) * interval.num_milliseconds()
             + alignment_timestamp.timestamp_millis(),

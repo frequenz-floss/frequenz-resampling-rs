@@ -4,6 +4,7 @@ on:
   push:
     branches: [ v0.x.x ]
   pull_request:
+  merge_group:
 
 jobs:
   test:
