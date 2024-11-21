@@ -1,8 +1,8 @@
-# frequenz-resampling-rs
+# Frequenz Resampling
 
 This project is the rust resampler for resampling a stream of samples to a given interval.
 
-## Usage
+## Usage in Rust
 
 To resample a vector of samples to a given interval, you can use the `Resampler` struct.
 The construction of a resampler expects an interval (`TimeDelta`) and a
@@ -42,4 +42,36 @@ let expected = vec![
 ];
 
 assert_eq!(resampled, expected);
+```
+
+
+## Usage in Python
+
+To resample a stream of samples to a given interval, you can use the `Resampler`
+class.
+The construction of a resampler expects an interval (`datetime.timedelta`),
+a `ResamplingFunction`, a `max_age_in_intervals` parameter to control the
+maximum age of a sample (skips all samples if set to `0`), and a `start` parameter to set the start time of the
+first resampled sample.
+
+```python
+import datetime as dt
+from frequenz.resampling import Resampler, ResamplingFunction
+
+
+start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+step = dt.timedelta(seconds=1)
+resampler = Resampler(dt.timedelta(seconds=5), ResamplingFunction.Average, 1, start)
+
+for i in range(10):
+    resampler.push_sample(timestamp=start + i * step, value=i + 1)
+
+expected = [
+    (start + 5 * step, 3.0),
+    (start + 10 * step, 8.0),
+]
+
+resampled = resampler.resample(start + 10 * step)
+
+assert resampled == expected
 ```
