@@ -20,7 +20,7 @@ permissions:
   contents: read
 
 jobs:
-  linux:
+  test:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -33,30 +33,6 @@ jobs:
             target: aarch64
           - runner: ubuntu-latest
             target: armv7
-        nox-session:
-          - "ci_checks_max"
-          - "pytest_min"
-        python:
-          - "3.11"
-          - "3.12"
-          - "3.13"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run nox
-        uses: frequenz-floss/gh-action-nox@v1.0.0
-        with:
-          python-version: ${{ matrix.python }}
-          nox-session: ${{ matrix.nox-session }}
-          git-username: ${{ secrets.GIT_USER }}
-          git-password: ${{ secrets.GIT_PASS }}
-
-  macos:
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      matrix:
-        platform:
           - runner: macos-14
             target: x86_64
           - runner: macos-14
