@@ -174,3 +174,62 @@ def test_resampling_none() -> None:
     resampled = resampler.resample(start + 10 * step)
 
     assert resampled == expected
+
+
+def test_enum_values() -> None:
+    """Test the ResamplingFunction enum."""
+    assert ResamplingFunction.values() == [0, 1, 2, 3, 4, 5]
+
+
+def test_enum_members() -> None:
+    """Test the ResamplingFunction enum."""
+    assert ResamplingFunction.members() == [
+        ("Average", 0),
+        ("Sum", 1),
+        ("Max", 2),
+        ("Min", 3),
+        ("Last", 4),
+        ("Count", 5),
+    ]
+
+
+def test_enum_str_repr() -> None:
+    """Test the ResamplingFunction enum."""
+    assert str(ResamplingFunction.Average) == "ResamplingFunction.Average"
+    assert repr(ResamplingFunction.Average) == "<ResamplingFunction.Average: 0>"
+    assert str(ResamplingFunction.Sum) == "ResamplingFunction.Sum"
+    assert repr(ResamplingFunction.Sum) == "<ResamplingFunction.Sum: 1>"
+    assert str(ResamplingFunction.Max) == "ResamplingFunction.Max"
+    assert repr(ResamplingFunction.Max) == "<ResamplingFunction.Max: 2>"
+    assert str(ResamplingFunction.Min) == "ResamplingFunction.Min"
+    assert repr(ResamplingFunction.Min) == "<ResamplingFunction.Min: 3>"
+    assert str(ResamplingFunction.Last) == "ResamplingFunction.Last"
+    assert repr(ResamplingFunction.Last) == "<ResamplingFunction.Last: 4>"
+    assert str(ResamplingFunction.Count) == "ResamplingFunction.Count"
+    assert repr(ResamplingFunction.Count) == "<ResamplingFunction.Count: 5>"
+
+
+def test_resampling_function_name_value() -> None:
+    """Test the ResamplingFunction name and value interface."""
+    assert ResamplingFunction.Average.name == "Average"
+    assert ResamplingFunction.Average.value == 0
+    assert ResamplingFunction.Sum.name == "Sum"
+    assert ResamplingFunction.Sum.value == 1
+    assert ResamplingFunction.Max.name == "Max"
+    assert ResamplingFunction.Max.value == 2
+    assert ResamplingFunction.Min.name == "Min"
+    assert ResamplingFunction.Min.value == 3
+    assert ResamplingFunction.Last.name == "Last"
+    assert ResamplingFunction.Last.value == 4
+    assert ResamplingFunction.Count.name == "Count"
+    assert ResamplingFunction.Count.value == 5
+
+
+def test_resampling_function_init() -> None:
+    """Test the ResamplingFunction init."""
+    assert ResamplingFunction(0) == ResamplingFunction.Average
+    assert ResamplingFunction(1) == ResamplingFunction.Sum
+    assert ResamplingFunction(2) == ResamplingFunction.Max
+    assert ResamplingFunction(3) == ResamplingFunction.Min
+    assert ResamplingFunction(4) == ResamplingFunction.Last
+    assert ResamplingFunction(5) == ResamplingFunction.Count
