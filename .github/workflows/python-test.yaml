@@ -1,0 +1,85 @@
+name: Python Test
+
+on:
+  merge_group:
+  pull_request:
+  push:
+    # We need to explicitly include tags because otherwise when adding
+    # `branches-ignore` it will only trigger on branches.
+    tags:
+      - '*'
+    branches-ignore:
+      # Ignore pushes to merge queues.
+      # We only want to test the merge commit (`merge_group` event), the hashes
+      # in the push were already tested by the PR checks
+      - 'gh-readonly-queue/**'
+      - 'dependabot/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: ubuntu-latest
+            target: x86_64
+          - runner: ubuntu-latest
+            target: x86
+          - runner: ubuntu-latest
+            target: aarch64
+          - runner: ubuntu-latest
+            target: armv7
+        nox-session:
+          - "ci_checks_max"
+          - "pytest_min"
+        python:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run nox
+        uses: frequenz-floss/gh-action-nox@v1.0.0
+        with:
+          python-version: ${{ matrix.python }}
+          nox-session: ${{ matrix.nox-session }}
+          git-username: ${{ secrets.GIT_USER }}
+          git-password: ${{ secrets.GIT_PASS }}
+
+  macos:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: macos-14
+            target: x86_64
+          - runner: macos-14
+            target: aarch64
+          - runner: macos-15
+            target: x86_64
+          - runner: macos-15
+            target: aarch64
+        nox-session:
+          - "ci_checks_max"
+          - "pytest_min"
+        python:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run nox
+        uses: frequenz-floss/gh-action-nox@v1.0.0
+        with:
+          python-version: ${{ matrix.python }}
+          nox-session: ${{ matrix.nox-session }}
+          git-username: ${{ secrets.GIT_USER }}
+          git-password: ${{ secrets.GIT_PASS }}

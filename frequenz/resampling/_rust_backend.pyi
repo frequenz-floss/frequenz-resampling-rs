@@ -1,0 +1,76 @@
+# License: MIT
+# Copyright © 2024 Frequenz Energy-as-a-Service GmbH
+
+__all__ = "Resampler", "ResamplingFunction"
+
+from datetime import datetime, timedelta
+from typing import Optional
+
+class ResamplingFunction:
+    """
+    The ResamplingFunction enum represents the different resampling functions
+    that can be used to resample a time series.
+    """
+
+    Average: ResamplingFunction
+    """Calculates the average of all samples in the time step (ignoring None values)"""
+    Sum: ResamplingFunction
+    """Calculates the sum of all samples in the time step (ignoring None values)"""
+    Max: ResamplingFunction
+    """Calculates the maximum of all samples in the time step"""
+    Min: ResamplingFunction
+    """Calculates the minimum of all samples in the time step"""
+    Last: ResamplingFunction
+    """Returns the last sample in the time step"""
+    Count: ResamplingFunction
+    """Counts the number of samples in the time step"""
+
+class Resampler:
+    """
+    The Resampler class is used to resample a time series of samples.
+
+    It stores the samples in a buffer and resamples the samples in the buffer when the
+    resample method is called.
+    A resampler can be configured with a resampling function and a resampling interval.
+    """
+
+    def __init__(
+        self,
+        interval: timedelta,
+        resampling_function: ResamplingFunction,
+        *,
+        max_age_in_intervals: int,
+        start: datetime,
+    ):
+        """
+        Initializes a new Resampler object.
+
+        Args:
+            interval: The resampling interval.
+            resampling_function: The resampling function.
+            max_age_in_intervals: The maximum age of a sample in intervals.
+            start: The start time of the resampling.
+        """
+
+    def push_sample(self, *, timestamp: datetime, value: Optional[float]) -> None:
+        """
+        Pushes a new sample into the resampler buffer.
+
+        Args:
+            timestamp: The timestamp of the sample.
+            value: The value of the sample.
+        """
+
+    def resample(
+        self, end: datetime | None = None
+    ) -> list[tuple[datetime, Optional[float]]]:
+        """
+        Resamples the samples in the buffer until the given end time.
+
+        Args:
+            end: The end time of the resampling. If `None` the samples in the buffer will be
+                resampled until the current date/time.
+
+        Returns:
+            A list of tuples with the resampled samples.
+        """
