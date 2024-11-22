@@ -21,7 +21,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
-    ignore:
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -31,6 +30,15 @@ updates:
     labels:
       - "part:tooling"
       - "type:tech-debt"
+    groups:
+      compatible:
+        update-types:
+          - "minor"
+          - "patch"
+      artifacts:
+        patterns:
+          - "actions/*-artifact"
+
 
   - package-ecosystem: "cargo"
     directory: "/"
