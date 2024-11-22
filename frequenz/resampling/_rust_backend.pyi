@@ -4,26 +4,46 @@
 __all__ = "Resampler", "ResamplingFunction"
 
 from datetime import datetime, timedelta
+from enum import Enum, unique
 from typing import Optional
 
-class ResamplingFunction:
+@unique
+class ResamplingFunction(Enum):
     """
     The ResamplingFunction enum represents the different resampling functions
     that can be used to resample a time series.
     """
 
-    Average: ResamplingFunction
+    Average = 0
     """Calculates the average of all samples in the time step (ignoring None values)"""
-    Sum: ResamplingFunction
+    Sum = 1
     """Calculates the sum of all samples in the time step (ignoring None values)"""
-    Max: ResamplingFunction
+    Max = 2
     """Calculates the maximum of all samples in the time step"""
-    Min: ResamplingFunction
+    Min = 3
     """Calculates the minimum of all samples in the time step"""
-    Last: ResamplingFunction
+    Last = 4
     """Returns the last sample in the time step"""
-    Count: ResamplingFunction
+    Count = 5
     """Counts the number of samples in the time step"""
+
+    @staticmethod
+    def values() -> list[int]:
+        """
+        Returns a list of all values of the enum.
+
+        Returns:
+            A list of all values of the enum.
+        """
+
+    @staticmethod
+    def members() -> list[tuple[str, int]]:
+        """
+        Returns a list of all members of the enum.
+
+        Returns:
+            A list of all members of the enum.
+        """
 
 class Resampler:
     """
