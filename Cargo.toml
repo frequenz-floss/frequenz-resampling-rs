@@ -15,4 +15,4 @@ itertools = "0.13"
 num-traits = "0.2"
 chrono = "0.4"
 log = "0.4"
-pyo3 = { version = "0.22.5", features = ["extension-module", "chrono"], optional = true }
+pyo3 = { version = "0.23.1", features = ["extension-module", "chrono"], optional = true }
