@@ -12,7 +12,7 @@ use std::ops::Div;
 
 use itertools::Itertools;
 
-pub type CustomResamplingFunction<S, T> = Box<dyn FnMut(&[&S]) -> Option<T> + Send>;
+pub type CustomResamplingFunction<S, T> = Box<dyn FnMut(&[&S]) -> Option<T> + Send + Sync>;
 
 /// The Sample trait represents a single sample in a time series.
 pub trait Sample: Clone + Debug + Copy + Default {
