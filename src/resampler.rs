@@ -42,9 +42,15 @@ pub enum ResamplingFunction<
     /// Calculates the minimum value of all samples in the time step (ignoring
     /// None values)
     Min,
+    /// Uses the first sample in the time step. If the first sample is None, the
+    /// resampling function will return None.
+    First,
     /// Uses the last sample in the time step. If the last sample is None, the
     /// resampling function will return None.
     Last,
+    /// Returns the first non-None sample in the time step. If all samples are
+    /// None, the resampling function will return None.
+    Coalesce,
     /// Counts the number of samples in the time step (ignoring None values)
     Count,
     /// A custom resampling function that takes a closure that takes a slice of
@@ -81,7 +87,9 @@ impl<
                     }
                 })
             }),
+            Self::First => samples.first().and_then(|s| s.value()),
             Self::Last => samples.last().and_then(|s| s.value()),
+            Self::Coalesce => samples.iter().find_map(|s| s.value()),
             Self::Count => Some(
                 T::from_usize(samples.iter().filter_map(|s| s.value()).count())
                     .unwrap_or_else(|| T::zero()),
@@ -102,7 +110,9 @@ impl<
             Self::Sum => write!(f, "Sum"),
             Self::Max => write!(f, "Max"),
             Self::Min => write!(f, "Min"),
+            Self::First => write!(f, "First"),
             Self::Last => write!(f, "Last"),
+            Self::Coalesce => write!(f, "Coalesce"),
             Self::Count => write!(f, "Count"),
             Self::Custom(_) => write!(f, "Custom"),
         }

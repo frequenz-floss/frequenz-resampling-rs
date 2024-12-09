@@ -13,5 +13,7 @@
 - Adds a `first_timestamp` parameter to the resampler to control whether the
   resampled timestamp should be the first timestamp in the buffer or the last
   timestamp in the buffer.
+- Adds `first` resampling function.
+- Adds `coalesce` resampling function.
 
 ## Bug Fixes

@@ -108,6 +108,31 @@ def test_resampler_resampling_function_min() -> None:
     assert resampled == expected
 
 
+def test_resampler_resampling_function_first() -> None:
+    """Test the resampler."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=1)
+    resampler = Resampler(
+        dt.timedelta(seconds=5),
+        ResamplingFunction.First,
+        max_age_in_intervals=1,
+        start=start,
+        first_timestamp=False,
+    )
+
+    for i in range(1, 11):
+        resampler.push_sample(timestamp=start + i * step, value=i)
+
+    expected = [
+        (start + 5 * step, 1.0),
+        (start + 10 * step, 6.0),
+    ]
+
+    resampled = resampler.resample(start + 10 * step)
+
+    assert resampled == expected
+
+
 def test_resampler_resampling_function_last() -> None:
     """Test the resampler."""
     start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
@@ -126,6 +151,34 @@ def test_resampler_resampling_function_last() -> None:
     expected = [
         (start + 5 * step, 5.0),
         (start + 10 * step, 10.0),
+    ]
+
+    resampled = resampler.resample(start + 10 * step)
+
+    assert resampled == expected
+
+
+def test_resampler_resampling_function_coalesce() -> None:
+    """Test the resampler."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=1)
+    resampler = Resampler(
+        dt.timedelta(seconds=5),
+        ResamplingFunction.Coalesce,
+        max_age_in_intervals=1,
+        start=start,
+        first_timestamp=False,
+    )
+
+    for i in range(1, 11):
+        if i == 6:
+            resampler.push_sample(timestamp=start + i * step, value=None)
+        else:
+            resampler.push_sample(timestamp=start + i * step, value=i)
+
+    expected = [
+        (start + 5 * step, 1.0),
+        (start + 10 * step, 7.0),
     ]
 
     resampled = resampler.resample(start + 10 * step)
@@ -185,7 +238,7 @@ def test_resampling_none() -> None:
 
 def test_enum_values() -> None:
     """Test the ResamplingFunction enum."""
-    assert ResamplingFunction.values() == [0, 1, 2, 3, 4, 5]
+    assert ResamplingFunction.values() == [0, 1, 2, 3, 4, 5, 6, 7]
 
 
 def test_enum_members() -> None:
@@ -197,6 +250,8 @@ def test_enum_members() -> None:
         ("Min", 3),
         ("Last", 4),
         ("Count", 5),
+        ("First", 6),
+        ("Coalesce", 7),
     ]
 
 
@@ -214,6 +269,10 @@ def test_enum_str_repr() -> None:
     assert repr(ResamplingFunction.Last) == "<ResamplingFunction.Last: 4>"
     assert str(ResamplingFunction.Count) == "ResamplingFunction.Count"
     assert repr(ResamplingFunction.Count) == "<ResamplingFunction.Count: 5>"
+    assert str(ResamplingFunction.First) == "ResamplingFunction.First"
+    assert repr(ResamplingFunction.First) == "<ResamplingFunction.First: 6>"
+    assert str(ResamplingFunction.Coalesce) == "ResamplingFunction.Coalesce"
+    assert repr(ResamplingFunction.Coalesce) == "<ResamplingFunction.Coalesce: 7>"
 
 
 def test_resampling_function_name_value() -> None:
@@ -230,6 +289,10 @@ def test_resampling_function_name_value() -> None:
     assert ResamplingFunction.Last.value == 4
     assert ResamplingFunction.Count.name == "Count"
     assert ResamplingFunction.Count.value == 5
+    assert ResamplingFunction.First.name == "First"
+    assert ResamplingFunction.First.value == 6
+    assert ResamplingFunction.Coalesce.name == "Coalesce"
+    assert ResamplingFunction.Coalesce.value == 7
 
 
 def test_resampling_function_init() -> None:
@@ -240,6 +303,8 @@ def test_resampling_function_init() -> None:
     assert ResamplingFunction(3) == ResamplingFunction.Min
     assert ResamplingFunction(4) == ResamplingFunction.Last
     assert ResamplingFunction(5) == ResamplingFunction.Count
+    assert ResamplingFunction(6) == ResamplingFunction.First
+    assert ResamplingFunction(7) == ResamplingFunction.Coalesce
 
 
 def test_resampler_first_timestamp() -> None:

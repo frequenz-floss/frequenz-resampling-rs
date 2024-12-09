@@ -26,6 +26,10 @@ class ResamplingFunction(Enum):
     """Returns the last sample in the time step"""
     Count = 5
     """Counts the number of samples in the time step"""
+    First = 6
+    """Returns the first sample in the time step"""
+    Coalesce = 7
+    """Returns the first non-None sample in the time step"""
 
     @staticmethod
     def values() -> list[int]:
