@@ -5,7 +5,8 @@ on:
     workflows: [Rust Test]
     types:
       - completed
-    branches: []
+    branches-ignore:
+      - '*'
     tags:
       - 'v*'
   workflow_dispatch:
