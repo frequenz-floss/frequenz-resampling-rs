@@ -1,0 +1,39 @@
+name: Rust Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches-ignore:
+      - '*'
+  workflow_run:
+    workflows: [Rust Test]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: '${{ runner.os }}-cargo-registry-${{ hashFiles(''**/Cargo.lock'') }}'
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cargo/git
+          key: '${{ runner.os }}-cargo-index-${{ hashFiles(''**/Cargo.lock'') }}'
+      - uses: actions/cache@v3
+        with:
+          path: target
+          key: '${{ runner.os }}-cargo-build-target-${{ hashFiles(''**/Cargo.lock'') }}'
+      - uses: actions-rs/cargo@v1
+        with:
+          command: package
+      - uses: actions-rs/cargo@v1
+        with:
+          command: publish
+          args: --token ${{ secrets.CRATES_TOKEN }}
