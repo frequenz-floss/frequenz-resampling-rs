@@ -5,13 +5,16 @@ on:
     workflows: [Rust Test]
     types:
       - completed
+    branches: []
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
   release:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
       github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v3
