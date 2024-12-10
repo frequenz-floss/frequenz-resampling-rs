@@ -154,12 +154,13 @@ struct ResamplerF32 {
 #[pymethods]
 impl ResamplerF32 {
     #[new]
-    #[pyo3(signature = (interval, resampling_function, *, max_age_in_intervals, start))]
+    #[pyo3(signature = (interval, resampling_function, *, max_age_in_intervals, start, first_timestamp=true))]
     fn new(
         interval: TimeDelta,
         resampling_function: ResamplingFunctionF32,
         max_age_in_intervals: i32,
         start: DateTime<Utc>,
+        first_timestamp: bool,
     ) -> Self {
         Self {
             inner: Resampler::new(
@@ -167,6 +168,7 @@ impl ResamplerF32 {
                 resampling_function.into(),
                 max_age_in_intervals,
                 start,
+                first_timestamp,
             ),
         }
     }

@@ -34,19 +34,19 @@ fn test_resampling(
 ) {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), resampling_function, 1, start);
+        Resampler::new(TimeDelta::seconds(5), resampling_function, 1, start, false);
     let step = TimeDelta::seconds(1);
     let data = vec![
-        TestSample::new(start, Some(1.0)),
-        TestSample::new(start + step, Some(2.0)),
-        TestSample::new(start + step * 2, Some(3.0)),
-        TestSample::new(start + step * 3, Some(4.0)),
-        TestSample::new(start + step * 4, Some(5.0)),
-        TestSample::new(start + step * 5, Some(6.0)),
-        TestSample::new(start + step * 6, Some(7.0)),
-        TestSample::new(start + step * 7, Some(8.0)),
-        TestSample::new(start + step * 8, Some(9.0)),
-        TestSample::new(start + step * 9, Some(10.0)),
+        TestSample::new(start + step, Some(1.0)),
+        TestSample::new(start + step * 2, Some(2.0)),
+        TestSample::new(start + step * 3, Some(3.0)),
+        TestSample::new(start + step * 4, Some(4.0)),
+        TestSample::new(start + step * 5, Some(5.0)),
+        TestSample::new(start + step * 6, Some(6.0)),
+        TestSample::new(start + step * 7, Some(7.0)),
+        TestSample::new(start + step * 8, Some(8.0)),
+        TestSample::new(start + step * 9, Some(9.0)),
+        TestSample::new(start + step * 10, Some(10.0)),
     ];
 
     resampler.extend(data);
@@ -137,25 +137,30 @@ fn test_resampling_custom() {
 #[test]
 fn test_resampling_with_max_age() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 2, start);
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        2,
+        start,
+        false,
+    );
     let step = TimeDelta::seconds(1);
     let data = vec![
-        TestSample::new(start, Some(1.0)),
-        TestSample::new(start + step, Some(2.0)),
-        TestSample::new(start + step * 2, Some(3.0)),
-        TestSample::new(start + step * 3, Some(4.0)),
-        TestSample::new(start + step * 4, Some(5.0)),
-        TestSample::new(start + step * 5, Some(6.0)),
-        TestSample::new(start + step * 6, Some(7.0)),
-        TestSample::new(start + step * 7, Some(8.0)),
-        TestSample::new(start + step * 8, Some(9.0)),
-        TestSample::new(start + step * 9, Some(10.0)),
-        TestSample::new(start + step * 10, Some(11.0)),
-        TestSample::new(start + step * 11, Some(12.0)),
-        TestSample::new(start + step * 12, Some(13.0)),
-        TestSample::new(start + step * 13, Some(14.0)),
-        TestSample::new(start + step * 14, Some(15.0)),
+        TestSample::new(start + step, Some(1.0)),
+        TestSample::new(start + step * 2, Some(2.0)),
+        TestSample::new(start + step * 3, Some(3.0)),
+        TestSample::new(start + step * 4, Some(4.0)),
+        TestSample::new(start + step * 5, Some(5.0)),
+        TestSample::new(start + step * 6, Some(6.0)),
+        TestSample::new(start + step * 7, Some(7.0)),
+        TestSample::new(start + step * 8, Some(8.0)),
+        TestSample::new(start + step * 9, Some(9.0)),
+        TestSample::new(start + step * 10, Some(10.0)),
+        TestSample::new(start + step * 11, Some(11.0)),
+        TestSample::new(start + step * 12, Some(12.0)),
+        TestSample::new(start + step * 13, Some(13.0)),
+        TestSample::new(start + step * 14, Some(14.0)),
+        TestSample::new(start + step * 15, Some(15.0)),
     ];
 
     resampler.extend(data);
@@ -173,8 +178,13 @@ fn test_resampling_with_max_age() {
 #[test]
 fn test_resampling_with_zero_max_age() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 0, start);
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        0,
+        start,
+        false,
+    );
     let step = TimeDelta::seconds(1);
     let data = vec![
         TestSample::new(start, Some(1.0)),
@@ -209,25 +219,30 @@ fn test_resampling_with_zero_max_age() {
 #[test]
 fn test_resampling_with_max_age_older() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 3, start);
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        3,
+        start,
+        false,
+    );
     let step = TimeDelta::seconds(1);
     let data = vec![
-        TestSample::new(start, Some(1.0)),
-        TestSample::new(start + step, Some(2.0)),
-        TestSample::new(start + step * 2, Some(3.0)),
-        TestSample::new(start + step * 3, Some(4.0)),
-        TestSample::new(start + step * 4, Some(5.0)),
-        TestSample::new(start + step * 5, Some(6.0)),
-        TestSample::new(start + step * 6, Some(7.0)),
-        TestSample::new(start + step * 7, Some(8.0)),
-        TestSample::new(start + step * 8, Some(9.0)),
-        TestSample::new(start + step * 9, Some(10.0)),
-        TestSample::new(start + step * 10, Some(11.0)),
-        TestSample::new(start + step * 11, Some(12.0)),
-        TestSample::new(start + step * 12, Some(13.0)),
-        TestSample::new(start + step * 13, Some(14.0)),
-        TestSample::new(start + step * 14, Some(15.0)),
+        TestSample::new(start + step, Some(1.0)),
+        TestSample::new(start + step * 2, Some(2.0)),
+        TestSample::new(start + step * 3, Some(3.0)),
+        TestSample::new(start + step * 4, Some(4.0)),
+        TestSample::new(start + step * 5, Some(5.0)),
+        TestSample::new(start + step * 6, Some(6.0)),
+        TestSample::new(start + step * 7, Some(7.0)),
+        TestSample::new(start + step * 8, Some(8.0)),
+        TestSample::new(start + step * 9, Some(9.0)),
+        TestSample::new(start + step * 10, Some(10.0)),
+        TestSample::new(start + step * 11, Some(11.0)),
+        TestSample::new(start + step * 12, Some(12.0)),
+        TestSample::new(start + step * 13, Some(13.0)),
+        TestSample::new(start + step * 14, Some(14.0)),
+        TestSample::new(start + step * 15, Some(15.0)),
     ];
 
     resampler.extend(data);
@@ -245,27 +260,32 @@ fn test_resampling_with_max_age_older() {
 #[test]
 fn test_resampling_with_max_age_batch() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 2, start);
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        2,
+        start,
+        false,
+    );
     let step = TimeDelta::seconds(1);
     let data1 = vec![
-        TestSample::new(start, Some(1.0)),
-        TestSample::new(start + step, Some(2.0)),
-        TestSample::new(start + step * 2, Some(3.0)),
-        TestSample::new(start + step * 3, Some(4.0)),
-        TestSample::new(start + step * 4, Some(5.0)),
-        TestSample::new(start + step * 5, Some(6.0)),
-        TestSample::new(start + step * 6, Some(7.0)),
-        TestSample::new(start + step * 7, Some(8.0)),
-        TestSample::new(start + step * 8, Some(9.0)),
-        TestSample::new(start + step * 9, Some(10.0)),
+        TestSample::new(start + step * 1, Some(1.0)),
+        TestSample::new(start + step * 2, Some(2.0)),
+        TestSample::new(start + step * 3, Some(3.0)),
+        TestSample::new(start + step * 4, Some(4.0)),
+        TestSample::new(start + step * 5, Some(5.0)),
+        TestSample::new(start + step * 6, Some(6.0)),
+        TestSample::new(start + step * 7, Some(7.0)),
+        TestSample::new(start + step * 8, Some(8.0)),
+        TestSample::new(start + step * 9, Some(9.0)),
+        TestSample::new(start + step * 10, Some(10.0)),
     ];
     let data2 = vec![
-        TestSample::new(start + step * 10, Some(11.0)),
-        TestSample::new(start + step * 11, Some(12.0)),
-        TestSample::new(start + step * 12, Some(13.0)),
-        TestSample::new(start + step * 13, Some(14.0)),
-        TestSample::new(start + step * 14, Some(15.0)),
+        TestSample::new(start + step * 11, Some(11.0)),
+        TestSample::new(start + step * 12, Some(12.0)),
+        TestSample::new(start + step * 13, Some(13.0)),
+        TestSample::new(start + step * 14, Some(14.0)),
+        TestSample::new(start + step * 15, Some(15.0)),
     ];
 
     resampler.extend(data1);
@@ -292,16 +312,21 @@ fn test_resampling_with_max_age_batch() {
 #[test]
 fn test_resampling_with_gap() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start);
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        false,
+    );
     let step = TimeDelta::seconds(1);
     let data = vec![
-        TestSample::new(start, Some(1.0)),
-        TestSample::new(start + step, Some(2.0)),
-        TestSample::new(start + step * 3, Some(4.0)),
-        TestSample::new(start + step * 4, Some(5.0)),
-        TestSample::new(start + step * 16, Some(6.0)),
-        TestSample::new(start + step * 19, Some(10.0)),
+        TestSample::new(start + step, Some(1.0)),
+        TestSample::new(start + step * 2, Some(2.0)),
+        TestSample::new(start + step * 4, Some(4.0)),
+        TestSample::new(start + step * 5, Some(5.0)),
+        TestSample::new(start + step * 17, Some(6.0)),
+        TestSample::new(start + step * 20, Some(10.0)),
     ];
 
     resampler.extend(data);
@@ -320,8 +345,13 @@ fn test_resampling_with_gap() {
 #[test]
 fn test_resampling_with_slow_data() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(1), ResamplingFunction::Average, 2, start);
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(1),
+        ResamplingFunction::Average,
+        2,
+        start,
+        false,
+    );
     let offset = TimeDelta::milliseconds(500);
     let step = TimeDelta::seconds(2);
     let data = vec![
@@ -351,16 +381,21 @@ fn test_resampling_with_slow_data() {
 #[test]
 fn test_resampling_with_gap_early_end_date() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start);
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        false,
+    );
     let step = TimeDelta::seconds(1);
     let data = vec![
-        TestSample::new(start, Some(1.0)),
-        TestSample::new(start + step, Some(2.0)),
-        TestSample::new(start + step * 3, Some(4.0)),
-        TestSample::new(start + step * 4, Some(5.0)),
-        TestSample::new(start + step * 16, Some(6.0)),
-        TestSample::new(start + step * 19, Some(10.0)),
+        TestSample::new(start + step, Some(1.0)),
+        TestSample::new(start + step * 2, Some(2.0)),
+        TestSample::new(start + step * 4, Some(4.0)),
+        TestSample::new(start + step * 5, Some(5.0)),
+        TestSample::new(start + step * 17, Some(6.0)),
+        TestSample::new(start + step * 20, Some(10.0)),
     ];
 
     resampler.extend(data);
@@ -385,8 +420,13 @@ fn test_resampling_with_gap_early_end_date() {
 #[test]
 fn test_empty_buffer() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start);
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        false,
+    );
 
     let resampled = resampler.resample(start + TimeDelta::seconds(10));
     assert_eq!(
@@ -413,5 +453,41 @@ fn test_epoch_alignment() {
             Some(DateTime::from_timestamp(1, 0).unwrap())
         ),
         DateTime::from_timestamp(1, 0).unwrap()
+    );
+}
+
+#[test]
+fn test_is_right_of_buffer_edge() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        true,
+    );
+    let step = TimeDelta::seconds(1);
+    let data = vec![
+        TestSample::new(start, Some(1.0)),
+        TestSample::new(start + step * 1, Some(2.0)),
+        TestSample::new(start + step * 2, Some(3.0)),
+        TestSample::new(start + step * 3, Some(4.0)),
+        TestSample::new(start + step * 4, Some(5.0)),
+        TestSample::new(start + step * 5, Some(6.0)),
+        TestSample::new(start + step * 6, Some(7.0)),
+        TestSample::new(start + step * 7, Some(8.0)),
+        TestSample::new(start + step * 8, Some(9.0)),
+        TestSample::new(start + step * 9, Some(10.0)),
+    ];
+
+    resampler.extend(data);
+
+    let resampled = resampler.resample(start + step * 10);
+    assert_eq!(
+        resampled,
+        vec![
+            TestSample::new(DateTime::from_timestamp(0, 0).unwrap(), Some(3.0)),
+            TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(8.0)),
+        ],
     );
 }

@@ -61,6 +61,7 @@ class Resampler:
         *,
         max_age_in_intervals: int,
         start: datetime,
+        first_timestamp: bool = True,
     ):
         """
         Initializes a new Resampler object.
@@ -70,6 +71,9 @@ class Resampler:
             resampling_function: The resampling function.
             max_age_in_intervals: The maximum age of a sample in intervals.
             start: The start time of the resampling.
+            first_timestamp: Whether the resampled timestamp should be the first
+                timestamp in the buffer or the last timestamp in the buffer.
+                Defaults to `True`.
         """
 
     def push_sample(self, *, timestamp: datetime, value: Optional[float]) -> None:
