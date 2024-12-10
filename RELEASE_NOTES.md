@@ -10,5 +10,8 @@
 - Adds python bindings for the resampler.
 - Adapts the ResamplingFunction Python interface to Python Enums.
 - Makes custom resampling function Sync.
+- Adds a `first_timestamp` parameter to the resampler to control whether the
+  resampled timestamp should be the first timestamp in the buffer or the last
+  timestamp in the buffer.
 
 ## Bug Fixes

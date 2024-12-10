@@ -44,20 +44,20 @@ impl Sample for TestSample {
 
 let start = DateTime::from_timestamp(0, 0).unwrap();
 let mut resampler: Resampler<f64, TestSample> =
-    Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start);
+    Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start, false);
 
 let step = TimeDelta::seconds(1);
 let data = vec![
-    TestSample::new(start, Some(1.0)),
-    TestSample::new(start + step, Some(2.0)),
-    TestSample::new(start + step * 2, Some(3.0)),
-    TestSample::new(start + step * 3, Some(4.0)),
-    TestSample::new(start + step * 4, Some(5.0)),
-    TestSample::new(start + step * 5, Some(6.0)),
-    TestSample::new(start + step * 6, Some(7.0)),
-    TestSample::new(start + step * 7, Some(8.0)),
-    TestSample::new(start + step * 8, Some(9.0)),
-    TestSample::new(start + step * 9, Some(10.0)),
+    TestSample::new(start + step, Some(1.0)),
+    TestSample::new(start + step * 2, Some(2.0)),
+    TestSample::new(start + step * 3, Some(3.0)),
+    TestSample::new(start + step * 4, Some(4.0)),
+    TestSample::new(start + step * 5, Some(5.0)),
+    TestSample::new(start + step * 6, Some(6.0)),
+    TestSample::new(start + step * 7, Some(7.0)),
+    TestSample::new(start + step * 8, Some(8.0)),
+    TestSample::new(start + step * 9, Some(9.0)),
+    TestSample::new(start + step * 10, Some(10.0)),
 ];
 
 resampler.extend(data);

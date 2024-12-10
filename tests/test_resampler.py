@@ -17,10 +17,11 @@ def test_resampler_resampling_function_average() -> None:
         ResamplingFunction.Average,
         max_age_in_intervals=1,
         start=start,
+        first_timestamp=False,
     )
 
-    for i in range(10):
-        resampler.push_sample(timestamp=start + i * step, value=i + 1)
+    for i in range(1, 11):
+        resampler.push_sample(timestamp=start + i * step, value=i)
 
     expected = [
         (start + 5 * step, 3.0),
@@ -41,10 +42,11 @@ def test_resampler_resampling_function_sum() -> None:
         ResamplingFunction.Sum,
         max_age_in_intervals=1,
         start=start,
+        first_timestamp=False,
     )
 
-    for i in range(10):
-        resampler.push_sample(timestamp=start + i * step, value=i + 1)
+    for i in range(1, 11):
+        resampler.push_sample(timestamp=start + i * step, value=i)
 
     expected = [
         (start + 5 * step, 15.0),
@@ -65,10 +67,11 @@ def test_resampler_resampling_function_max() -> None:
         ResamplingFunction.Max,
         max_age_in_intervals=1,
         start=start,
+        first_timestamp=False,
     )
 
-    for i in range(10):
-        resampler.push_sample(timestamp=start + i * step, value=i + 1)
+    for i in range(1, 11):
+        resampler.push_sample(timestamp=start + i * step, value=i)
 
     expected = [
         (start + 5 * step, 5.0),
@@ -89,10 +92,11 @@ def test_resampler_resampling_function_min() -> None:
         ResamplingFunction.Min,
         max_age_in_intervals=1,
         start=start,
+        first_timestamp=False,
     )
 
-    for i in range(10):
-        resampler.push_sample(timestamp=start + i * step, value=i + 1)
+    for i in range(1, 11):
+        resampler.push_sample(timestamp=start + i * step, value=i)
 
     expected = [
         (start + 5 * step, 1.0),
@@ -113,10 +117,11 @@ def test_resampler_resampling_function_last() -> None:
         ResamplingFunction.Last,
         max_age_in_intervals=1,
         start=start,
+        first_timestamp=False,
     )
 
-    for i in range(10):
-        resampler.push_sample(timestamp=start + i * step, value=i + 1)
+    for i in range(1, 11):
+        resampler.push_sample(timestamp=start + i * step, value=i)
 
     expected = [
         (start + 5 * step, 5.0),
@@ -137,10 +142,11 @@ def test_resampler_resampling_function_count() -> None:
         ResamplingFunction.Count,
         max_age_in_intervals=1,
         start=start,
+        first_timestamp=False,
     )
 
-    for i in range(10):
-        resampler.push_sample(timestamp=start + i * step, value=i + 1)
+    for i in range(1, 11):
+        resampler.push_sample(timestamp=start + i * step, value=i)
 
     expected = [
         (start + 5 * step, 5.0),
@@ -161,9 +167,10 @@ def test_resampling_none() -> None:
         ResamplingFunction.Average,
         max_age_in_intervals=1,
         start=start,
+        first_timestamp=False,
     )
 
-    for i in range(10):
+    for i in range(1, 11):
         resampler.push_sample(timestamp=start + i * step, value=None)
 
     expected = [
@@ -233,3 +240,53 @@ def test_resampling_function_init() -> None:
     assert ResamplingFunction(3) == ResamplingFunction.Min
     assert ResamplingFunction(4) == ResamplingFunction.Last
     assert ResamplingFunction(5) == ResamplingFunction.Count
+
+
+def test_resampler_first_timestamp() -> None:
+    """Test the resampler with the first timestamp."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=0.5)
+    resampler = Resampler(
+        dt.timedelta(seconds=5),
+        ResamplingFunction.Average,
+        max_age_in_intervals=1,
+        start=start,
+        first_timestamp=True,
+    )
+
+    for i in range(0, 20):
+        resampler.push_sample(timestamp=start + i * step, value=i + 1)
+
+    expected = [
+        (start + 0 * step, 5.5),
+        (start + 10 * step, 15.5),
+    ]
+
+    resampled = resampler.resample(start + 20 * step)
+
+    assert resampled == expected
+
+
+def test_resampler_last_timestamp() -> None:
+    """Test the resampler with the last timestamp."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=0.5)
+    resampler = Resampler(
+        dt.timedelta(seconds=5),
+        ResamplingFunction.Average,
+        max_age_in_intervals=1,
+        start=start,
+        first_timestamp=False,
+    )
+
+    for i in range(1, 21):
+        resampler.push_sample(timestamp=start + i * step, value=i)
+
+    expected = [
+        (start + 10 * step, 5.5),
+        (start + 20 * step, 15.5),
+    ]
+
+    resampled = resampler.resample(start + 20 * step)
+
+    assert resampled == expected

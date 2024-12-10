@@ -17,7 +17,7 @@ use frequenz_resampling::{Resampler, ResamplingFunction, Sample};
 
 let start = DateTime::from_timestamp(0, 0).unwrap();
 let mut resampler: Resampler<f64, TestSample> =
-    Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start);
+    Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start, false);
 let step = TimeDelta::seconds(1);
 let data = vec![
     TestSample::new(start, Some(1.0)),
@@ -61,7 +61,13 @@ from frequenz.resampling import Resampler, ResamplingFunction
 
 start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
 step = dt.timedelta(seconds=1)
-resampler = Resampler(dt.timedelta(seconds=5), ResamplingFunction.Average, 1, start)
+resampler = Resampler(
+    dt.timedelta(seconds=5),
+    ResamplingFunction.Average,
+    max_age_in_intervals=1,
+    start=start,
+    first_timestamp=False,
+)
 
 for i in range(10):
     resampler.push_sample(timestamp=start + i * step, value=i + 1)
