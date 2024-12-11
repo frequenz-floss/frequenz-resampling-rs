@@ -40,6 +40,8 @@ enum ResamplingFunctionF32 {
     Min,
     Last,
     Count,
+    First,
+    Coalesce,
 }
 
 #[pymethods]
@@ -58,6 +60,8 @@ impl ResamplingFunctionF32 {
             Self::Min.value(),
             Self::Last.value(),
             Self::Count.value(),
+            Self::First.value(),
+            Self::Coalesce.value(),
         ]
     }
 
@@ -70,6 +74,8 @@ impl ResamplingFunctionF32 {
             (Self::Min.to_string(), Self::Min.value()),
             (Self::Last.to_string(), Self::Last.value()),
             (Self::Count.to_string(), Self::Count.value()),
+            (Self::First.to_string(), Self::First.value()),
+            (Self::Coalesce.to_string(), Self::Coalesce.value()),
         ]
     }
 
@@ -95,6 +101,8 @@ impl ResamplingFunctionF32 {
             Self::Min => 3,
             Self::Last => 4,
             Self::Count => 5,
+            Self::First => 6,
+            Self::Coalesce => 7,
         }
     }
 }
@@ -110,6 +118,8 @@ impl TryFrom<i32> for ResamplingFunctionF32 {
             3 => Ok(Self::Min),
             4 => Ok(Self::Last),
             5 => Ok(Self::Count),
+            6 => Ok(Self::First),
+            7 => Ok(Self::Coalesce),
             _ => Err(PyValueError::new_err("Invalid resampling function")),
         }
     }
@@ -125,7 +135,9 @@ impl Display for ResamplingFunctionF32 {
                 ResamplingFunctionF32::Sum => "Sum",
                 ResamplingFunctionF32::Max => "Max",
                 ResamplingFunctionF32::Min => "Min",
+                ResamplingFunctionF32::First => "First",
                 ResamplingFunctionF32::Last => "Last",
+                ResamplingFunctionF32::Coalesce => "Coalesce",
                 ResamplingFunctionF32::Count => "Count",
             }
         )
@@ -139,7 +151,9 @@ impl From<ResamplingFunctionF32> for ResamplingFunction<f32, PythonSample> {
             ResamplingFunctionF32::Sum => ResamplingFunction::Sum,
             ResamplingFunctionF32::Max => ResamplingFunction::Max,
             ResamplingFunctionF32::Min => ResamplingFunction::Min,
+            ResamplingFunctionF32::First => ResamplingFunction::First,
             ResamplingFunctionF32::Last => ResamplingFunction::Last,
+            ResamplingFunctionF32::Coalesce => ResamplingFunction::Coalesce,
             ResamplingFunctionF32::Count => ResamplingFunction::Count,
         }
     }
