@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 python = ["pyo3"]
 
 [dependencies]
-itertools = "0.13"
+itertools = "0.14"
 num-traits = "0.2"
 chrono = "0.4"
 log = "0.4"
