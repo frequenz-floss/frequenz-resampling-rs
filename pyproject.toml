@@ -51,7 +51,7 @@ dev-mkdocs = [
 dev-mypy = [
   "mypy == 1.13.0",
   "types-Markdown == 3.7.0.20240822",
-  "types-setuptools == 75.6.0.20241126",
+  "types-setuptools == 75.6.0.20241223",
   "frequenz-resampling[dev-mkdocs,dev-noxfile,dev-pytest]"
 ]
 dev-noxfile = ["nox == 2024.10.9", "frequenz-repo-config[lib] == 0.11.0"]
