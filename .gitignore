@@ -24,3 +24,7 @@ Cargo.lock
 .DS_Store
 .python-version
 *.cpython-*.so
+.mypy_cache/
+.nox
+.pytest_cache
+.venv
