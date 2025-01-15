@@ -3,8 +3,15 @@
 
 //! This file contains tests for the resampler module.
 
+use std::{
+    cmp::Ordering,
+    iter::Sum,
+    ops::{Add, Div},
+};
+
 use crate::resampler::{epoch_align, Resampler, ResamplingFunction, Sample};
 use chrono::{DateTime, TimeDelta, Utc};
+use num_traits::FromPrimitive;
 
 #[derive(Debug, Clone, Default, Copy, PartialEq)]
 pub(crate) struct TestSample {
@@ -694,4 +701,173 @@ fn test_is_right_of_buffer_edge() {
             TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(8.0)),
         ],
     );
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
+struct NonPrimitive {
+    value: Vec<i32>,
+}
+
+impl Add for NonPrimitive {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            value: self.value.into_iter().chain(rhs.value).collect(),
+        }
+    }
+}
+
+impl Div for NonPrimitive {
+    type Output = Self;
+
+    fn div(self, _rhs: Self) -> Self::Output {
+        Self { value: vec![] }
+    }
+}
+
+impl Sum for NonPrimitive {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        Self {
+            value: iter.map(|s| s.value).flatten().collect(),
+        }
+    }
+}
+
+impl PartialOrd for NonPrimitive {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.value.partial_cmp(&other.value)
+    }
+}
+
+impl FromPrimitive for NonPrimitive {
+    fn from_i32(n: i32) -> Option<Self> {
+        Some(Self { value: vec![n] })
+    }
+
+    fn from_u32(n: u32) -> Option<Self> {
+        Some(Self {
+            value: vec![n as i32],
+        })
+    }
+
+    fn from_i64(n: i64) -> Option<Self> {
+        Some(Self {
+            value: vec![n as i32],
+        })
+    }
+
+    fn from_u64(n: u64) -> Option<Self> {
+        Some(Self {
+            value: vec![n as i32],
+        })
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
+struct NonPrimitiveSample {
+    timestamp: DateTime<Utc>,
+    value: Option<NonPrimitive>,
+}
+
+impl Sample for NonPrimitiveSample {
+    type Value = NonPrimitive;
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn value(&self) -> Option<NonPrimitive> {
+        self.value.clone()
+    }
+
+    fn new(timestamp: DateTime<Utc>, value: Option<Self::Value>) -> Self {
+        Self { timestamp, value }
+    }
+}
+
+#[test]
+fn test_resampling_non_primitive_average() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let mut resampler: Resampler<NonPrimitive, NonPrimitiveSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        false,
+    );
+    let step = TimeDelta::seconds(1);
+    let data = vec![
+        NonPrimitiveSample::new(start + step, Some(NonPrimitive { value: vec![1] })),
+        NonPrimitiveSample::new(start + step * 2, Some(NonPrimitive { value: vec![2] })),
+        NonPrimitiveSample::new(start + step * 3, Some(NonPrimitive { value: vec![3] })),
+        NonPrimitiveSample::new(start + step * 4, Some(NonPrimitive { value: vec![4] })),
+        NonPrimitiveSample::new(start + step * 5, Some(NonPrimitive { value: vec![5] })),
+        NonPrimitiveSample::new(start + step * 6, Some(NonPrimitive { value: vec![6] })),
+        NonPrimitiveSample::new(start + step * 7, Some(NonPrimitive { value: vec![7] })),
+        NonPrimitiveSample::new(start + step * 8, Some(NonPrimitive { value: vec![8] })),
+        NonPrimitiveSample::new(start + step * 9, Some(NonPrimitive { value: vec![9] })),
+        NonPrimitiveSample::new(start + step * 10, Some(NonPrimitive { value: vec![10] })),
+    ];
+
+    resampler.extend(data);
+
+    let resampled = resampler.resample(start + step * 10);
+
+    let expected = vec![
+        NonPrimitiveSample::new(
+            DateTime::from_timestamp(5, 0).unwrap(),
+            Some(NonPrimitive { value: vec![] }),
+        ),
+        NonPrimitiveSample::new(
+            DateTime::from_timestamp(10, 0).unwrap(),
+            Some(NonPrimitive { value: vec![] }),
+        ),
+    ];
+    assert_eq!(resampled, expected);
+}
+
+#[test]
+fn test_resampling_non_primitive_sum() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let mut resampler: Resampler<NonPrimitive, NonPrimitiveSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Sum,
+        1,
+        start,
+        false,
+    );
+    let step = TimeDelta::seconds(1);
+    let data = vec![
+        NonPrimitiveSample::new(start + step, Some(NonPrimitive { value: vec![1] })),
+        NonPrimitiveSample::new(start + step * 2, Some(NonPrimitive { value: vec![2] })),
+        NonPrimitiveSample::new(start + step * 3, Some(NonPrimitive { value: vec![3] })),
+        NonPrimitiveSample::new(start + step * 4, Some(NonPrimitive { value: vec![4] })),
+        NonPrimitiveSample::new(start + step * 5, Some(NonPrimitive { value: vec![5] })),
+        NonPrimitiveSample::new(start + step * 6, Some(NonPrimitive { value: vec![6] })),
+        NonPrimitiveSample::new(start + step * 7, Some(NonPrimitive { value: vec![7] })),
+        NonPrimitiveSample::new(start + step * 8, Some(NonPrimitive { value: vec![8] })),
+        NonPrimitiveSample::new(start + step * 9, Some(NonPrimitive { value: vec![9] })),
+        NonPrimitiveSample::new(start + step * 10, Some(NonPrimitive { value: vec![10] })),
+    ];
+
+    resampler.extend(data);
+
+    let resampled = resampler.resample(start + step * 10);
+
+    let expected = vec![
+        NonPrimitiveSample::new(
+            DateTime::from_timestamp(5, 0).unwrap(),
+            Some(NonPrimitive {
+                value: vec![1, 2, 3, 4, 5],
+            }),
+        ),
+        NonPrimitiveSample::new(
+            DateTime::from_timestamp(10, 0).unwrap(),
+            Some(NonPrimitive {
+                value: vec![6, 7, 8, 9, 10],
+            }),
+        ),
+    ];
+    assert_eq!(resampled, expected);
 }
