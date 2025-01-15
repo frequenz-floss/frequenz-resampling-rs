@@ -15,5 +15,6 @@
   timestamp in the buffer.
 - Adds `first` resampling function.
 - Adds `coalesce` resampling function.
+- Allows resampling to handle non-primitive types.
 
 ## Bug Fixes

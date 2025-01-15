@@ -6,7 +6,7 @@
 
 use chrono::{DateTime, TimeDelta, Utc};
 use log::warn;
-use num_traits::{Float, FromPrimitive};
+use num_traits::FromPrimitive;
 use std::fmt::Debug;
 use std::ops::Div;
 
@@ -15,7 +15,7 @@ use itertools::Itertools;
 pub type CustomResamplingFunction<S, T> = Box<dyn FnMut(&[&S]) -> Option<T> + Send + Sync>;
 
 /// The Sample trait represents a single sample in a time series.
-pub trait Sample: Clone + Debug + Copy + Default {
+pub trait Sample: Clone + Debug + Default {
     type Value;
     fn new(timestamp: DateTime<Utc>, value: Option<Self::Value>) -> Self;
     fn timestamp(&self) -> DateTime<Utc>;
@@ -26,7 +26,7 @@ pub trait Sample: Clone + Debug + Copy + Default {
 /// that can be used to resample a channel.
 #[derive(Default)]
 pub enum ResamplingFunction<
-    T: Div<Output = T> + std::iter::Sum + FromPrimitive + Float + Default + Debug,
+    T: Div<Output = T> + std::iter::Sum + Default + Debug,
     S: Sample<Value = T>,
 > {
     /// Calculates the average of all samples in the time step (ignoring None
@@ -59,7 +59,7 @@ pub enum ResamplingFunction<
 }
 
 impl<
-        T: Div<Output = T> + std::iter::Sum + FromPrimitive + Float + Default + Debug,
+        T: Div<Output = T> + std::iter::Sum + PartialOrd + FromPrimitive + Default + Debug,
         S: Sample<Value = T>,
     > ResamplingFunction<T, S>
 {
@@ -71,7 +71,7 @@ impl<
             Self::Sum => samples.iter().filter_map(|s| s.value()).sum1(),
             Self::Max => samples.iter().filter_map(|s| s.value()).max_by(|a, b| {
                 a.partial_cmp(b).unwrap_or_else(|| {
-                    if a.is_finite() {
+                    if a.partial_cmp(&T::default()).is_some() {
                         std::cmp::Ordering::Greater
                     } else {
                         std::cmp::Ordering::Less
@@ -80,7 +80,7 @@ impl<
             }),
             Self::Min => samples.iter().filter_map(|s| s.value()).min_by(|a, b| {
                 a.partial_cmp(b).unwrap_or_else(|| {
-                    if a.is_finite() {
+                    if a.partial_cmp(&T::default()).is_some() {
                         std::cmp::Ordering::Less
                     } else {
                         std::cmp::Ordering::Greater
@@ -92,17 +92,15 @@ impl<
             Self::Coalesce => samples.iter().find_map(|s| s.value()),
             Self::Count => Some(
                 T::from_usize(samples.iter().filter_map(|s| s.value()).count())
-                    .unwrap_or_else(|| T::zero()),
+                    .unwrap_or_else(|| T::default()),
             ),
             Self::Custom(f) => f.as_mut()(samples),
         }
     }
 }
 
-impl<
-        T: Div<Output = T> + std::iter::Sum + FromPrimitive + Float + Default + Debug,
-        S: Sample<Value = T>,
-    > Debug for ResamplingFunction<T, S>
+impl<T: Div<Output = T> + std::iter::Sum + Default + Debug, S: Sample<Value = T>> Debug
+    for ResamplingFunction<T, S>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -125,7 +123,7 @@ impl<
 /// function and a resampling interval.
 #[derive(Debug, Default)]
 pub struct Resampler<
-    T: Div<Output = T> + std::iter::Sum + FromPrimitive + Float + Default + Debug,
+    T: Div<Output = T> + std::iter::Sum + PartialOrd + FromPrimitive + Default + Debug,
     S: Sample<Value = T>,
 > {
     /// The time step between each resampled sample
@@ -157,7 +155,7 @@ pub struct Resampler<
 }
 
 impl<
-        T: Div<Output = T> + std::iter::Sum + FromPrimitive + Float + Default + Debug,
+        T: Div<Output = T> + std::iter::Sum + PartialOrd + FromPrimitive + Default + Debug,
         S: Sample<Value = T>,
     > Resampler<T, S>
 {
@@ -276,7 +274,7 @@ impl<
 }
 
 impl<
-        T: Div<Output = T> + std::iter::Sum + FromPrimitive + Float + Default + Debug,
+        T: Div<Output = T> + std::iter::Sum + PartialOrd + FromPrimitive + Default + Debug,
         S: Sample<Value = T>,
     > Extend<S> for Resampler<T, S>
 {
