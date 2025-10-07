@@ -24,6 +24,7 @@ env:
 
 jobs:
   test:
+    name: Test with nox
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -62,6 +63,23 @@ jobs:
           nox-session: ${{ matrix.nox-session }}
           git-username: ${{ secrets.GIT_USER }}
           git-password: ${{ secrets.GIT_PASS }}
+
+  # This job runs if all the `test` matrix jobs ran and succeeded.
+  # It is only used to have a single job that we can require in branch
+  # protection rules, so we don't have to update the protection rules each time
+  # we add or remove a job from the matrix.
+  test-all:
+    # The job name should match the name of the `test` job.
+    name: Test with nox
+    needs: ["test"]
+    # We skip this job only if test was also skipped
+    if: always() && needs.test.result != 'skipped'
+    runs-on: ubuntu-24.04
+    env:
+      DEPS_RESULT: ${{ needs.test.result }}
+    steps:
+      - name: Check matrix job result
+        run: test "$DEPS_RESULT" = "success"
 
   build:
     name: Build distribution packages
@@ -119,6 +137,23 @@ jobs:
           name: dist-packages-${{ matrix.platform.runner }}-${{ matrix.platform.target }}-${{ matrix.python }}
           path: dist/
           if-no-files-found: error
+
+  # This job runs if all the `build` matrix jobs ran and succeeded.
+  # It is only used to have a single job that we can require in branch
+  # protection rules, so we don't have to update the protection rules each time
+  # we add or remove a job from the matrix.
+  build-all:
+    # The job name should match the name of the `build` job.
+    name: Build distribution packages
+    needs: ["build"]
+    # We skip this job only if build was also skipped
+    if: always() && needs.build.result != 'skipped'
+    runs-on: ubuntu-24.04
+    env:
+      DEPS_RESULT: ${{ needs.build.result }}
+    steps:
+      - name: Check matrix job result
+        run: test "$DEPS_RESULT" = "success"
 
   test-docs:
     name: Test documentation website generation
