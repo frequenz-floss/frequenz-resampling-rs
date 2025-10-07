@@ -63,7 +63,7 @@ dev-pytest = [
   "pytest == 8.3.4",
   "pytest-mock == 3.14.0",
   "pytest-asyncio == 0.25.3",
-  "async-solipsism == 0.7",
+  "async-solipsism == 0.8",
   "hypothesis == 6.124.9",
 ]
 dev-rust-build = [
