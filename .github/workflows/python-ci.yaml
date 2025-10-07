@@ -28,13 +28,13 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: x86_64
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: x86
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: aarch64
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: armv7
           - runner: macos-14
             target: x86_64
@@ -69,13 +69,13 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: x86_64
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: x86
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: aarch64
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: armv7
           - runner: macos-14
             target: x86_64
@@ -123,7 +123,7 @@ jobs:
   test-docs:
     name: Test documentation website generation
     if: github.event_name != 'push'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Setup Git
         uses: frequenz-floss/gh-action-setup-git@v0.x.x
@@ -162,7 +162,7 @@ jobs:
   publish-docs:
     name: Publish documentation website to GitHub pages
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: ["build", "test"]
     permissions:
       contents: write
@@ -240,7 +240,7 @@ jobs:
       # discussions to create the release announcement in the discussion forums
       contents: write
       discussions: write
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Download distribution files
         uses: actions/download-artifact@v4
@@ -283,7 +283,7 @@ jobs:
     name: Publish packages to PyPI
     if: startsWith(github.ref, 'refs/tags/v')
     needs: ["publish-docs", "build", "test"]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
     steps:
