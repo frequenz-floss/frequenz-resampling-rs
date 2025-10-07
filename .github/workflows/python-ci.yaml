@@ -278,7 +278,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download distribution files
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dist-packages-${{ matrix.platform.runner }}-${{ matrix.platform.target }}-${{ matrix.python }}
           path: dist
@@ -323,7 +323,7 @@ jobs:
       id-token: write
     steps:
       - name: Download distribution files
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dist-packages-${{ matrix.platform.runner }}-${{ matrix.platform.target }}-${{ matrix.python }}
           path: dist
