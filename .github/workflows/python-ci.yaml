@@ -24,17 +24,18 @@ env:
 
 jobs:
   test:
+    name: Test with nox
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: x86_64
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: x86
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: aarch64
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: armv7
           - runner: macos-14
             target: x86_64
@@ -63,19 +64,36 @@ jobs:
           git-username: ${{ secrets.GIT_USER }}
           git-password: ${{ secrets.GIT_PASS }}
 
+  # This job runs if all the `test` matrix jobs ran and succeeded.
+  # It is only used to have a single job that we can require in branch
+  # protection rules, so we don't have to update the protection rules each time
+  # we add or remove a job from the matrix.
+  test-all:
+    # The job name should match the name of the `test` job.
+    name: Test with nox
+    needs: ["test"]
+    # We skip this job only if test was also skipped
+    if: always() && needs.test.result != 'skipped'
+    runs-on: ubuntu-24.04
+    env:
+      DEPS_RESULT: ${{ needs.test.result }}
+    steps:
+      - name: Check matrix job result
+        run: test "$DEPS_RESULT" = "success"
+
   build:
     name: Build distribution packages
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: x86_64
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: x86
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: aarch64
-          - runner: ubuntu-20.04
+          - runner: ubuntu-24.04
             target: armv7
           - runner: macos-14
             target: x86_64
@@ -120,10 +138,27 @@ jobs:
           path: dist/
           if-no-files-found: error
 
+  # This job runs if all the `build` matrix jobs ran and succeeded.
+  # It is only used to have a single job that we can require in branch
+  # protection rules, so we don't have to update the protection rules each time
+  # we add or remove a job from the matrix.
+  build-all:
+    # The job name should match the name of the `build` job.
+    name: Build distribution packages
+    needs: ["build"]
+    # We skip this job only if build was also skipped
+    if: always() && needs.build.result != 'skipped'
+    runs-on: ubuntu-24.04
+    env:
+      DEPS_RESULT: ${{ needs.build.result }}
+    steps:
+      - name: Check matrix job result
+        run: test "$DEPS_RESULT" = "success"
+
   test-docs:
     name: Test documentation website generation
     if: github.event_name != 'push'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Setup Git
         uses: frequenz-floss/gh-action-setup-git@v0.x.x
@@ -162,7 +197,7 @@ jobs:
   publish-docs:
     name: Publish documentation website to GitHub pages
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: ["build", "test"]
     permissions:
       contents: write
@@ -240,7 +275,7 @@ jobs:
       # discussions to create the release announcement in the discussion forums
       contents: write
       discussions: write
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Download distribution files
         uses: actions/download-artifact@v4
@@ -283,7 +318,7 @@ jobs:
     name: Publish packages to PyPI
     if: startsWith(github.ref, 'refs/tags/v')
     needs: ["publish-docs", "build", "test"]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write
     steps:
