@@ -33,7 +33,6 @@ updates:
           - "minor"
         exclude-patterns:
           - "async-solipsism"
-          - "frequenz-client-microgrid"
           - "frequenz-repo-config*"
           - "markdown-callouts"
           - "mkdocs-gen-files"
