@@ -121,7 +121,7 @@ jobs:
         run: python -m build
 
       - name: Upload distribution files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dist-packages-${{ matrix.platform.runner }}-${{ matrix.platform.target }}-${{ matrix.python }}
           path: dist/
@@ -171,7 +171,7 @@ jobs:
           mike set-default $MIKE_VERSION
 
       - name: Upload site
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docs-site
           path: site/
