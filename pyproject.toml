@@ -56,7 +56,7 @@ dev-mypy = [
 ]
 dev-noxfile = ["nox == 2025.5.1", "frequenz-repo-config[lib] == 0.13.5"]
 dev-pylint = [
-  "pylint == 3.3.9",
+  "pylint == 4.0.2",
   "frequenz-resampling[dev-mkdocs,dev-noxfile,dev-pytest]",
 ]
 dev-pytest = [
