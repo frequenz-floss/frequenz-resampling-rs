@@ -1,5 +1,8 @@
 # Frequenz Resampling
 
+[<img alt="docs.rs" src="https://img.shields.io/docsrs/frequenz-resampling">](https://docs.rs/frequenz-resampling)
+[<img alt="Crates.io" src="https://img.shields.io/crates/v/frequenz-resampling">](https://crates.io/crates/frequenz-resampling)
+
 This project is the rust resampler for resampling a stream of samples to a given interval.
 
 ## Usage in Rust

@@ -2,6 +2,9 @@
 name = "frequenz-resampling"
 version = "0.1.0"
 edition = "2021"
+description = "A library for resampling a stream of samples to a given interval."
+repository = "https://github.com/frequenz-floss/frequenz-resampling-rs"
+license = "MIT"
 
 [lib]
 name = "frequenz_resampling"
