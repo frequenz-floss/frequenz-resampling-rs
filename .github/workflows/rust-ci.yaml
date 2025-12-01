@@ -28,26 +28,3 @@ jobs:
 
       - name: Run tests
         uses: frequenz-floss/gh-action-cargo-test@v1.0.0
-
-  release:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: [test]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cargo/registry
-          key: '${{ runner.os }}-cargo-registry-${{ hashFiles(''**/Cargo.lock'') }}'
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cargo/git
-          key: '${{ runner.os }}-cargo-index-${{ hashFiles(''**/Cargo.lock'') }}'
-      - uses: actions/cache@v4
-        with:
-          path: target
-          key: '${{ runner.os }}-cargo-build-target-${{ hashFiles(''**/Cargo.lock'') }}'
-      - name: package
-        run: cargo package
-      - name: publish
-        run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
