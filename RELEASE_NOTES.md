@@ -1,5 +1,5 @@
 # Frequenz Resampling Release Notes
 
-## Summary
+## New Features
 
-This is the first release of Frequenz Resampling.
+- `ResamplingFunction` now implements `Clone`.
