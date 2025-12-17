@@ -9,7 +9,8 @@ use std::{
     ops::{Add, Div},
 };
 
-use crate::resampler::{epoch_align, Resampler, ResamplingFunction, Sample};
+use crate::resampler::{epoch_align, Resampler, Sample};
+use crate::ResamplingFunction;
 use chrono::{DateTime, TimeDelta, Utc};
 use num_traits::FromPrimitive;
 

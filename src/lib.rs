@@ -81,4 +81,7 @@ mod tests;
 #[cfg(feature = "python")]
 mod python;
 
-pub use resampler::{Resampler, ResamplingFunction, Sample};
+mod resampling_function;
+pub use resampling_function::ResamplingFunction;
+
+pub use resampler::{Resampler, Sample};
