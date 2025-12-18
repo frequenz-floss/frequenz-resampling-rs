@@ -4,15 +4,13 @@
 //! The resampler module provides the Resampler struct that is used to resample
 //! a time series of samples.
 
+use crate::ResamplingFunction;
 use chrono::{DateTime, TimeDelta, Utc};
+use itertools::Itertools;
 use log::warn;
 use num_traits::FromPrimitive;
 use std::fmt::Debug;
 use std::ops::Div;
-
-use itertools::Itertools;
-
-pub type CustomResamplingFunction<S, T> = Box<dyn FnMut(&[&S]) -> Option<T> + Send + Sync>;
 
 /// The Sample trait represents a single sample in a time series.
 pub trait Sample: Clone + Debug + Default {
@@ -20,42 +18,6 @@ pub trait Sample: Clone + Debug + Default {
     fn new(timestamp: DateTime<Utc>, value: Option<Self::Value>) -> Self;
     fn timestamp(&self) -> DateTime<Utc>;
     fn value(&self) -> Option<Self::Value>;
-}
-
-/// The ResamplingFunction enum represents the different resampling functions
-/// that can be used to resample a channel.
-#[derive(Default)]
-pub enum ResamplingFunction<
-    T: Div<Output = T> + std::iter::Sum + Default + Debug,
-    S: Sample<Value = T>,
-> {
-    /// Calculates the average of all samples in the time step (ignoring None
-    /// values)
-    #[default]
-    Average,
-    /// Calculates the sum of all samples in the time step (ignoring None
-    /// values)
-    Sum,
-    /// Calculates the maximum value of all samples in the time step (ignoring
-    /// None values)
-    Max,
-    /// Calculates the minimum value of all samples in the time step (ignoring
-    /// None values)
-    Min,
-    /// Uses the first sample in the time step. If the first sample is None, the
-    /// resampling function will return None.
-    First,
-    /// Uses the last sample in the time step. If the last sample is None, the
-    /// resampling function will return None.
-    Last,
-    /// Returns the first non-None sample in the time step. If all samples are
-    /// None, the resampling function will return None.
-    Coalesce,
-    /// Counts the number of samples in the time step (ignoring None values)
-    Count,
-    /// A custom resampling function that takes a closure that takes a slice of
-    /// samples and returns an optional value.
-    Custom(CustomResamplingFunction<S, T>),
 }
 
 impl<

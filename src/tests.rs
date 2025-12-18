@@ -9,7 +9,8 @@ use std::{
     ops::{Add, Div},
 };
 
-use crate::resampler::{epoch_align, Resampler, ResamplingFunction, Sample};
+use crate::resampler::{epoch_align, Resampler, Sample};
+use crate::ResamplingFunction;
 use chrono::{DateTime, TimeDelta, Utc};
 use num_traits::FromPrimitive;
 
@@ -334,13 +335,33 @@ fn test_resampling_coalesce() {
 
 #[test]
 fn test_resampling_custom() {
+    // Create a custom FnMut with internal state (an increment).
+    let mut increment = 0.0;
+    let resampling_fn = ResamplingFunction::Custom(Box::new(move |x: &[&TestSample]| {
+        increment += 1.0;
+        Some(x.iter().map(|s| s.value().unwrap()).sum::<f64>() + increment)
+    }));
+
     test_resampling(
-        ResamplingFunction::Custom(Box::new(|x: &[&TestSample]| {
-            Some(x.iter().map(|s| s.value().unwrap()).sum::<f64>())
-        })),
+        resampling_fn.clone(),
         vec![
-            TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(15.0)),
-            TestSample::new(DateTime::from_timestamp(10, 0).unwrap(), Some(40.0)),
+            TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(16.0)),
+            TestSample::new(DateTime::from_timestamp(10, 0).unwrap(), Some(42.0)),
+        ],
+    );
+    // Ensure that clones don't share mutable state with the original.
+    test_resampling(
+        resampling_fn.clone(),
+        vec![
+            TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(16.0)),
+            TestSample::new(DateTime::from_timestamp(10, 0).unwrap(), Some(42.0)),
+        ],
+    );
+    test_resampling(
+        resampling_fn,
+        vec![
+            TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(16.0)),
+            TestSample::new(DateTime::from_timestamp(10, 0).unwrap(), Some(42.0)),
         ],
     );
 }
