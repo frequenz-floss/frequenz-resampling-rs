@@ -743,6 +743,127 @@ fn test_first_timestamp_true() {
     );
 }
 
+/// Test that first_timestamp only affects output timestamps, not aggregated values.
+/// Both resamplers should produce the same values, just with different timestamps.
+#[test]
+fn test_first_timestamp_same_values() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+    let data: Vec<TestSample> = (0..10)
+        .map(|i| TestSample::new(start + step * i, Some((i + 1) as f64)))
+        .collect();
+
+    let mut resampler_true: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        true,
+    );
+    let mut resampler_false: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        false,
+    );
+
+    resampler_true.extend(data.clone());
+    resampler_false.extend(data);
+
+    let result_true = resampler_true.resample(start + step * 10);
+    let result_false = resampler_false.resample(start + step * 10);
+
+    // Both should have same number of results
+    assert_eq!(result_true.len(), result_false.len());
+
+    // Values should be identical, only timestamps differ
+    for (r_true, r_false) in result_true.iter().zip(result_false.iter()) {
+        assert_eq!(r_true.value(), r_false.value());
+        // Timestamps differ by exactly one interval (5 seconds)
+        assert_eq!(
+            r_false.timestamp() - r_true.timestamp(),
+            TimeDelta::seconds(5)
+        );
+    }
+}
+
+/// Test that a sample exactly at interval boundary goes to the next interval.
+/// With [start, end) semantics, sample at t=5 should be in interval [5, 10), not [0, 5).
+#[test]
+fn test_sample_at_interval_boundary() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Sum,
+        1,
+        start,
+        false,
+    );
+
+    // Only add samples at boundaries: t=0, t=5
+    let data = vec![
+        TestSample::new(start, Some(10.0)),            // t=0, in [0, 5)
+        TestSample::new(start + step * 5, Some(20.0)), // t=5, in [5, 10)
+    ];
+
+    resampler.extend(data);
+
+    let resampled = resampler.resample(start + step * 10);
+
+    // Interval [0, 5): only t=0 → sum = 10.0
+    // Interval [5, 10): only t=5 → sum = 20.0
+    assert_eq!(
+        resampled,
+        vec![
+            TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(10.0)),
+            TestSample::new(DateTime::from_timestamp(10, 0).unwrap(), Some(20.0)),
+        ],
+    );
+}
+
+/// Test with data starting mid-interval.
+/// Verifies correct behavior when first sample doesn't align with interval start.
+#[test]
+fn test_data_starting_mid_interval() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        false,
+    );
+
+    // Data starts at t=2, not t=0
+    // Interval [0, 5): samples at t=2,3,4 with values 1,2,3 → avg = 2.0
+    // Interval [5, 10): samples at t=5,6,7 with values 4,5,6 → avg = 5.0
+    let data = vec![
+        TestSample::new(start + step * 2, Some(1.0)),
+        TestSample::new(start + step * 3, Some(2.0)),
+        TestSample::new(start + step * 4, Some(3.0)),
+        TestSample::new(start + step * 5, Some(4.0)),
+        TestSample::new(start + step * 6, Some(5.0)),
+        TestSample::new(start + step * 7, Some(6.0)),
+    ];
+
+    resampler.extend(data);
+
+    let resampled = resampler.resample(start + step * 10);
+
+    assert_eq!(
+        resampled,
+        vec![
+            TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(2.0)),
+            TestSample::new(DateTime::from_timestamp(10, 0).unwrap(), Some(5.0)),
+        ],
+    );
+}
+
 /// Test that matches the README example exactly.
 /// This test verifies that first_timestamp only affects the output timestamp,
 /// not the interval grouping semantics.
