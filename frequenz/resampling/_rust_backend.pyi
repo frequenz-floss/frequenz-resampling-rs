@@ -75,9 +75,10 @@ class Resampler:
             resampling_function: The resampling function.
             max_age_in_intervals: The maximum age of a sample in intervals.
             start: The start time of the resampling.
-            first_timestamp: Whether the resampled timestamp should be the first
-                timestamp in the buffer or the last timestamp in the buffer.
-                Defaults to `True`.
+            first_timestamp: Controls the output timestamp labeling. If `True`,
+                the output timestamp is set to the start of the interval. If `False`,
+                the output timestamp is set to the end of the interval. This does not
+                affect how samples are grouped into intervals. Defaults to `True`.
         """
 
     def push_sample(self, *, timestamp: datetime, value: Optional[float]) -> None:
