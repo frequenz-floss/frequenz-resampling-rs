@@ -2,17 +2,98 @@
 
 [<img alt="docs.rs" src="https://img.shields.io/docsrs/frequenz-resampling">](https://docs.rs/frequenz-resampling)
 [<img alt="Crates.io" src="https://img.shields.io/crates/v/frequenz-resampling">](https://crates.io/crates/frequenz-resampling)
+[<img alt="PyPI" src="https://img.shields.io/pypi/v/frequenz-resampling">](https://pypi.org/project/frequenz-resampling/)
 
-This project is the rust resampler for resampling a stream of samples to a given interval.
+A high-performance library for resampling time series data to fixed intervals. Built in Rust with Python bindings via PyO3.
 
-## Usage in Rust
+## Features
 
-To resample a vector of samples to a given interval, you can use the `Resampler` struct.
-The construction of a resampler expects an interval (`TimeDelta`) and a
-`ResamplingFunction`.
-Moreover, the `max_age_in_intervals` parameter can be used to control the maximum age of a sample.
-If set to 0, all samples are skipped.
-The `start` parameter is used to set the start time of the first resampled sample.
+- Resample irregular time series data to uniform intervals
+- Multiple built-in resampling functions: `Average`, `Sum`, `Max`, `Min`, `First`, `Last`, `Coalesce`, `Count`
+- Support for custom resampling functions
+- Configurable sample age limits to handle stale data
+- Available for both Rust and Python
+
+## Installation
+
+### Rust
+
+Add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+frequenz-resampling = "0.2"
+```
+
+### Python
+
+```bash
+pip install frequenz-resampling
+```
+
+Requires Python 3.11 or later.
+
+## Quick Start
+
+### Rust
+
+```rust
+use chrono::{DateTime, TimeDelta};
+use frequenz_resampling::{Resampler, ResamplingFunction};
+
+// Create a resampler with 5-second intervals using average aggregation
+let start = DateTime::from_timestamp(0, 0).unwrap();
+let mut resampler = Resampler::new(
+    TimeDelta::seconds(5),
+    ResamplingFunction::Average,
+    1,     // max_age_in_intervals
+    start,
+    false, // first_timestamp
+);
+
+// Push samples and resample
+// See full usage example below
+```
+
+### Python
+
+```python
+import datetime as dt
+from frequenz.resampling import Resampler, ResamplingFunction
+
+# Create a resampler with 5-second intervals
+start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+resampler = Resampler(
+    dt.timedelta(seconds=5),
+    ResamplingFunction.Average,
+    max_age_in_intervals=1,
+    start=start,
+)
+
+# Push samples
+for i in range(10):
+    resampler.push_sample(timestamp=start + i * dt.timedelta(seconds=1), value=i + 1)
+
+# Get resampled data
+resampled = resampler.resample(start + dt.timedelta(seconds=10))
+```
+
+## Documentation
+
+- **Rust**: [docs.rs/frequenz-resampling](https://docs.rs/frequenz-resampling)
+- **Python**: API documentation available via the installed package
+
+## Usage
+
+### Rust
+
+To resample a vector of samples to a given interval, use the `Resampler` struct. The constructor accepts:
+
+- `interval`: The target resampling interval (`TimeDelta`)
+- `resampling_function`: How to aggregate samples within each interval (`ResamplingFunction`)
+- `max_age_in_intervals`: Maximum age of samples to consider (set to 0 to skip all samples)
+- `start`: Start time of the first resampled sample
+- `first_timestamp`: Whether to use the first timestamp in each interval (default: last timestamp)
 
 ```rust
 use chrono::{DateTime, TimeDelta};
@@ -47,15 +128,9 @@ let expected = vec![
 assert_eq!(resampled, expected);
 ```
 
+### Python
 
-## Usage in Python
-
-To resample a stream of samples to a given interval, you can use the `Resampler`
-class.
-The construction of a resampler expects an interval (`datetime.timedelta`),
-a `ResamplingFunction`, a `max_age_in_intervals` parameter to control the
-maximum age of a sample (skips all samples if set to `0`), and a `start` parameter to set the start time of the
-first resampled sample.
+The Python API mirrors the Rust interface. Create a `Resampler` with the same parameters:
 
 ```python
 import datetime as dt
@@ -84,3 +159,21 @@ resampled = resampler.resample(start + 10 * step)
 
 assert resampled == expected
 ```
+
+## Resampling Functions
+
+| Function | Description |
+|----------|-------------|
+| `Average` | Calculates the mean of all samples in the interval |
+| `Sum` | Calculates the sum of all samples |
+| `Max` | Returns the maximum value |
+| `Min` | Returns the minimum value |
+| `First` | Returns the first sample value |
+| `Last` | Returns the last sample value |
+| `Coalesce` | Returns the first non-None sample |
+| `Count` | Returns the number of samples |
+| `Custom` | User-defined aggregation function (Rust only) |
+
+## License
+
+This project is licensed under the MIT License.
