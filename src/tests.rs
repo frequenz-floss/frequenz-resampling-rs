@@ -44,17 +44,20 @@ fn test_resampling(
     let mut resampler: Resampler<f64, TestSample> =
         Resampler::new(TimeDelta::seconds(5), resampling_function, 1, start, false);
     let step = TimeDelta::seconds(1);
+    // Data starts at t=0, matching the README example
+    // Interval [0, 5) contains t=0,1,2,3,4 with values 1,2,3,4,5
+    // Interval [5, 10) contains t=5,6,7,8,9 with values 6,7,8,9,10
     let data = vec![
-        TestSample::new(start + step, Some(1.0)),
-        TestSample::new(start + step * 2, Some(2.0)),
-        TestSample::new(start + step * 3, Some(3.0)),
-        TestSample::new(start + step * 4, Some(4.0)),
-        TestSample::new(start + step * 5, Some(5.0)),
-        TestSample::new(start + step * 6, Some(6.0)),
-        TestSample::new(start + step * 7, Some(7.0)),
-        TestSample::new(start + step * 8, Some(8.0)),
-        TestSample::new(start + step * 9, Some(9.0)),
-        TestSample::new(start + step * 10, Some(10.0)),
+        TestSample::new(start, Some(1.0)),
+        TestSample::new(start + step, Some(2.0)),
+        TestSample::new(start + step * 2, Some(3.0)),
+        TestSample::new(start + step * 3, Some(4.0)),
+        TestSample::new(start + step * 4, Some(5.0)),
+        TestSample::new(start + step * 5, Some(6.0)),
+        TestSample::new(start + step * 6, Some(7.0)),
+        TestSample::new(start + step * 7, Some(8.0)),
+        TestSample::new(start + step * 8, Some(9.0)),
+        TestSample::new(start + step * 9, Some(10.0)),
     ];
 
     resampler.extend(data);
@@ -71,17 +74,20 @@ fn test_resampling_with_none_first(
     let mut resampler: Resampler<f64, TestSample> =
         Resampler::new(TimeDelta::seconds(5), resampling_function, 1, start, false);
     let step = TimeDelta::seconds(1);
+    // First sample at t=0 is None
+    // Interval [0, 5) contains t=0,1,2,3,4 with values None,2,3,4,5
+    // Interval [5, 10) contains t=5,6,7,8,9 with values None,7,8,9,10
     let data = vec![
-        TestSample::new(start + step, None),
-        TestSample::new(start + step * 2, Some(2.0)),
-        TestSample::new(start + step * 3, Some(3.0)),
-        TestSample::new(start + step * 4, Some(4.0)),
-        TestSample::new(start + step * 5, Some(5.0)),
-        TestSample::new(start + step * 6, None),
-        TestSample::new(start + step * 7, Some(7.0)),
-        TestSample::new(start + step * 8, Some(8.0)),
-        TestSample::new(start + step * 9, Some(9.0)),
-        TestSample::new(start + step * 10, Some(10.0)),
+        TestSample::new(start, None),
+        TestSample::new(start + step, Some(2.0)),
+        TestSample::new(start + step * 2, Some(3.0)),
+        TestSample::new(start + step * 3, Some(4.0)),
+        TestSample::new(start + step * 4, Some(5.0)),
+        TestSample::new(start + step * 5, None),
+        TestSample::new(start + step * 6, Some(7.0)),
+        TestSample::new(start + step * 7, Some(8.0)),
+        TestSample::new(start + step * 8, Some(9.0)),
+        TestSample::new(start + step * 9, Some(10.0)),
     ];
 
     resampler.extend(data);
@@ -98,7 +104,9 @@ fn test_resampling_with_none_all(
     let mut resampler: Resampler<f64, TestSample> =
         Resampler::new(TimeDelta::seconds(5), resampling_function, 1, start, false);
     let step = TimeDelta::seconds(1);
+    // All values are None
     let data = vec![
+        TestSample::new(start, None),
         TestSample::new(start + step, None),
         TestSample::new(start + step * 2, None),
         TestSample::new(start + step * 3, None),
@@ -108,7 +116,6 @@ fn test_resampling_with_none_all(
         TestSample::new(start + step * 7, None),
         TestSample::new(start + step * 8, None),
         TestSample::new(start + step * 9, None),
-        TestSample::new(start + step * 10, None),
     ];
 
     resampler.extend(data);
@@ -377,22 +384,23 @@ fn test_resampling_with_max_age() {
         false,
     );
     let step = TimeDelta::seconds(1);
+    // Data starts at t=0 with values 1-15
     let data = vec![
-        TestSample::new(start + step, Some(1.0)),
-        TestSample::new(start + step * 2, Some(2.0)),
-        TestSample::new(start + step * 3, Some(3.0)),
-        TestSample::new(start + step * 4, Some(4.0)),
-        TestSample::new(start + step * 5, Some(5.0)),
-        TestSample::new(start + step * 6, Some(6.0)),
-        TestSample::new(start + step * 7, Some(7.0)),
-        TestSample::new(start + step * 8, Some(8.0)),
-        TestSample::new(start + step * 9, Some(9.0)),
-        TestSample::new(start + step * 10, Some(10.0)),
-        TestSample::new(start + step * 11, Some(11.0)),
-        TestSample::new(start + step * 12, Some(12.0)),
-        TestSample::new(start + step * 13, Some(13.0)),
-        TestSample::new(start + step * 14, Some(14.0)),
-        TestSample::new(start + step * 15, Some(15.0)),
+        TestSample::new(start, Some(1.0)),
+        TestSample::new(start + step, Some(2.0)),
+        TestSample::new(start + step * 2, Some(3.0)),
+        TestSample::new(start + step * 3, Some(4.0)),
+        TestSample::new(start + step * 4, Some(5.0)),
+        TestSample::new(start + step * 5, Some(6.0)),
+        TestSample::new(start + step * 6, Some(7.0)),
+        TestSample::new(start + step * 7, Some(8.0)),
+        TestSample::new(start + step * 8, Some(9.0)),
+        TestSample::new(start + step * 9, Some(10.0)),
+        TestSample::new(start + step * 10, Some(11.0)),
+        TestSample::new(start + step * 11, Some(12.0)),
+        TestSample::new(start + step * 12, Some(13.0)),
+        TestSample::new(start + step * 13, Some(14.0)),
+        TestSample::new(start + step * 14, Some(15.0)),
     ];
 
     resampler.extend(data);
@@ -459,22 +467,23 @@ fn test_resampling_with_max_age_older() {
         false,
     );
     let step = TimeDelta::seconds(1);
+    // Data starts at t=0 with values 1-15
     let data = vec![
-        TestSample::new(start + step, Some(1.0)),
-        TestSample::new(start + step * 2, Some(2.0)),
-        TestSample::new(start + step * 3, Some(3.0)),
-        TestSample::new(start + step * 4, Some(4.0)),
-        TestSample::new(start + step * 5, Some(5.0)),
-        TestSample::new(start + step * 6, Some(6.0)),
-        TestSample::new(start + step * 7, Some(7.0)),
-        TestSample::new(start + step * 8, Some(8.0)),
-        TestSample::new(start + step * 9, Some(9.0)),
-        TestSample::new(start + step * 10, Some(10.0)),
-        TestSample::new(start + step * 11, Some(11.0)),
-        TestSample::new(start + step * 12, Some(12.0)),
-        TestSample::new(start + step * 13, Some(13.0)),
-        TestSample::new(start + step * 14, Some(14.0)),
-        TestSample::new(start + step * 15, Some(15.0)),
+        TestSample::new(start, Some(1.0)),
+        TestSample::new(start + step, Some(2.0)),
+        TestSample::new(start + step * 2, Some(3.0)),
+        TestSample::new(start + step * 3, Some(4.0)),
+        TestSample::new(start + step * 4, Some(5.0)),
+        TestSample::new(start + step * 5, Some(6.0)),
+        TestSample::new(start + step * 6, Some(7.0)),
+        TestSample::new(start + step * 7, Some(8.0)),
+        TestSample::new(start + step * 8, Some(9.0)),
+        TestSample::new(start + step * 9, Some(10.0)),
+        TestSample::new(start + step * 10, Some(11.0)),
+        TestSample::new(start + step * 11, Some(12.0)),
+        TestSample::new(start + step * 12, Some(13.0)),
+        TestSample::new(start + step * 13, Some(14.0)),
+        TestSample::new(start + step * 14, Some(15.0)),
     ];
 
     resampler.extend(data);
@@ -500,24 +509,25 @@ fn test_resampling_with_max_age_batch() {
         false,
     );
     let step = TimeDelta::seconds(1);
+    // Data starts at t=0 with values 1-10
     let data1 = vec![
-        TestSample::new(start + step * 1, Some(1.0)),
-        TestSample::new(start + step * 2, Some(2.0)),
-        TestSample::new(start + step * 3, Some(3.0)),
-        TestSample::new(start + step * 4, Some(4.0)),
-        TestSample::new(start + step * 5, Some(5.0)),
-        TestSample::new(start + step * 6, Some(6.0)),
-        TestSample::new(start + step * 7, Some(7.0)),
-        TestSample::new(start + step * 8, Some(8.0)),
-        TestSample::new(start + step * 9, Some(9.0)),
-        TestSample::new(start + step * 10, Some(10.0)),
+        TestSample::new(start, Some(1.0)),
+        TestSample::new(start + step, Some(2.0)),
+        TestSample::new(start + step * 2, Some(3.0)),
+        TestSample::new(start + step * 3, Some(4.0)),
+        TestSample::new(start + step * 4, Some(5.0)),
+        TestSample::new(start + step * 5, Some(6.0)),
+        TestSample::new(start + step * 6, Some(7.0)),
+        TestSample::new(start + step * 7, Some(8.0)),
+        TestSample::new(start + step * 8, Some(9.0)),
+        TestSample::new(start + step * 9, Some(10.0)),
     ];
     let data2 = vec![
-        TestSample::new(start + step * 11, Some(11.0)),
-        TestSample::new(start + step * 12, Some(12.0)),
-        TestSample::new(start + step * 13, Some(13.0)),
-        TestSample::new(start + step * 14, Some(14.0)),
-        TestSample::new(start + step * 15, Some(15.0)),
+        TestSample::new(start + step * 10, Some(11.0)),
+        TestSample::new(start + step * 11, Some(12.0)),
+        TestSample::new(start + step * 12, Some(13.0)),
+        TestSample::new(start + step * 13, Some(14.0)),
+        TestSample::new(start + step * 14, Some(15.0)),
     ];
 
     resampler.extend(data1);
@@ -552,13 +562,18 @@ fn test_resampling_with_gap() {
         false,
     );
     let step = TimeDelta::seconds(1);
+    // Data with gaps: samples at t=0,1,3,4, then gap, then t=16,19
+    // Interval [0, 5): t=0,1,3,4 with values 1,2,4,5 → avg = 3.0
+    // Interval [5, 10): none → None
+    // Interval [10, 15): none → None
+    // Interval [15, 20): t=16,19 with values 6,10 → avg = 8.0
     let data = vec![
-        TestSample::new(start + step, Some(1.0)),
-        TestSample::new(start + step * 2, Some(2.0)),
-        TestSample::new(start + step * 4, Some(4.0)),
-        TestSample::new(start + step * 5, Some(5.0)),
-        TestSample::new(start + step * 17, Some(6.0)),
-        TestSample::new(start + step * 20, Some(10.0)),
+        TestSample::new(start, Some(1.0)),
+        TestSample::new(start + step, Some(2.0)),
+        TestSample::new(start + step * 3, Some(4.0)),
+        TestSample::new(start + step * 4, Some(5.0)),
+        TestSample::new(start + step * 16, Some(6.0)),
+        TestSample::new(start + step * 19, Some(10.0)),
     ];
 
     resampler.extend(data);
@@ -621,13 +636,14 @@ fn test_resampling_with_gap_early_end_date() {
         false,
     );
     let step = TimeDelta::seconds(1);
+    // Same data structure as test_resampling_with_gap, but tests batched resampling
     let data = vec![
-        TestSample::new(start + step, Some(1.0)),
-        TestSample::new(start + step * 2, Some(2.0)),
-        TestSample::new(start + step * 4, Some(4.0)),
-        TestSample::new(start + step * 5, Some(5.0)),
-        TestSample::new(start + step * 17, Some(6.0)),
-        TestSample::new(start + step * 20, Some(10.0)),
+        TestSample::new(start, Some(1.0)),
+        TestSample::new(start + step, Some(2.0)),
+        TestSample::new(start + step * 3, Some(4.0)),
+        TestSample::new(start + step * 4, Some(5.0)),
+        TestSample::new(start + step * 16, Some(6.0)),
+        TestSample::new(start + step * 19, Some(10.0)),
     ];
 
     resampler.extend(data);
@@ -689,7 +705,7 @@ fn test_epoch_alignment() {
 }
 
 #[test]
-fn test_is_right_of_buffer_edge() {
+fn test_first_timestamp_true() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let mut resampler: Resampler<f64, TestSample> = Resampler::new(
         TimeDelta::seconds(5),
@@ -715,11 +731,58 @@ fn test_is_right_of_buffer_edge() {
     resampler.extend(data);
 
     let resampled = resampler.resample(start + step * 10);
+    // Intervals: [0, 5) with samples t=0,1,2,3,4 → avg(1,2,3,4,5) = 3.0
+    //            [5, 10) with samples t=5,6,7,8,9 → avg(6,7,8,9,10) = 8.0
+    // Output timestamp is at interval start (first_timestamp=true)
     assert_eq!(
         resampled,
         vec![
             TestSample::new(DateTime::from_timestamp(0, 0).unwrap(), Some(3.0)),
             TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(8.0)),
+        ],
+    );
+}
+
+/// Test that matches the README example exactly.
+/// This test verifies that first_timestamp only affects the output timestamp,
+/// not the interval grouping semantics.
+#[test]
+fn test_first_timestamp_false() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        false,
+    );
+    let step = TimeDelta::seconds(1);
+    let data = vec![
+        TestSample::new(start, Some(1.0)),
+        TestSample::new(start + step * 1, Some(2.0)),
+        TestSample::new(start + step * 2, Some(3.0)),
+        TestSample::new(start + step * 3, Some(4.0)),
+        TestSample::new(start + step * 4, Some(5.0)),
+        TestSample::new(start + step * 5, Some(6.0)),
+        TestSample::new(start + step * 6, Some(7.0)),
+        TestSample::new(start + step * 7, Some(8.0)),
+        TestSample::new(start + step * 8, Some(9.0)),
+        TestSample::new(start + step * 9, Some(10.0)),
+    ];
+
+    resampler.extend(data);
+
+    let resampled = resampler.resample(start + step * 10);
+    // Intervals should be the same as first_timestamp=true: [0, 5) and [5, 10)
+    // Only the output timestamp should differ (end of interval instead of start)
+    // Interval [0, 5) with samples t=0,1,2,3,4 → avg(1,2,3,4,5) = 3.0
+    // Interval [5, 10) with samples t=5,6,7,8,9 → avg(6,7,8,9,10) = 8.0
+    // Output timestamp is at interval end (first_timestamp=false)
+    assert_eq!(
+        resampled,
+        vec![
+            TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(3.0)),
+            TestSample::new(DateTime::from_timestamp(10, 0).unwrap(), Some(8.0)),
         ],
     );
 }
@@ -818,17 +881,18 @@ fn test_resampling_non_primitive_average() {
         false,
     );
     let step = TimeDelta::seconds(1);
+    // Data starts at t=0
     let data = vec![
-        NonPrimitiveSample::new(start + step, Some(NonPrimitive { value: vec![1] })),
-        NonPrimitiveSample::new(start + step * 2, Some(NonPrimitive { value: vec![2] })),
-        NonPrimitiveSample::new(start + step * 3, Some(NonPrimitive { value: vec![3] })),
-        NonPrimitiveSample::new(start + step * 4, Some(NonPrimitive { value: vec![4] })),
-        NonPrimitiveSample::new(start + step * 5, Some(NonPrimitive { value: vec![5] })),
-        NonPrimitiveSample::new(start + step * 6, Some(NonPrimitive { value: vec![6] })),
-        NonPrimitiveSample::new(start + step * 7, Some(NonPrimitive { value: vec![7] })),
-        NonPrimitiveSample::new(start + step * 8, Some(NonPrimitive { value: vec![8] })),
-        NonPrimitiveSample::new(start + step * 9, Some(NonPrimitive { value: vec![9] })),
-        NonPrimitiveSample::new(start + step * 10, Some(NonPrimitive { value: vec![10] })),
+        NonPrimitiveSample::new(start, Some(NonPrimitive { value: vec![1] })),
+        NonPrimitiveSample::new(start + step, Some(NonPrimitive { value: vec![2] })),
+        NonPrimitiveSample::new(start + step * 2, Some(NonPrimitive { value: vec![3] })),
+        NonPrimitiveSample::new(start + step * 3, Some(NonPrimitive { value: vec![4] })),
+        NonPrimitiveSample::new(start + step * 4, Some(NonPrimitive { value: vec![5] })),
+        NonPrimitiveSample::new(start + step * 5, Some(NonPrimitive { value: vec![6] })),
+        NonPrimitiveSample::new(start + step * 6, Some(NonPrimitive { value: vec![7] })),
+        NonPrimitiveSample::new(start + step * 7, Some(NonPrimitive { value: vec![8] })),
+        NonPrimitiveSample::new(start + step * 8, Some(NonPrimitive { value: vec![9] })),
+        NonPrimitiveSample::new(start + step * 9, Some(NonPrimitive { value: vec![10] })),
     ];
 
     resampler.extend(data);
@@ -859,17 +923,20 @@ fn test_resampling_non_primitive_sum() {
         false,
     );
     let step = TimeDelta::seconds(1);
+    // Data starts at t=0
+    // Interval [0, 5): t=0,1,2,3,4 with values [1],[2],[3],[4],[5]
+    // Interval [5, 10): t=5,6,7,8,9 with values [6],[7],[8],[9],[10]
     let data = vec![
-        NonPrimitiveSample::new(start + step, Some(NonPrimitive { value: vec![1] })),
-        NonPrimitiveSample::new(start + step * 2, Some(NonPrimitive { value: vec![2] })),
-        NonPrimitiveSample::new(start + step * 3, Some(NonPrimitive { value: vec![3] })),
-        NonPrimitiveSample::new(start + step * 4, Some(NonPrimitive { value: vec![4] })),
-        NonPrimitiveSample::new(start + step * 5, Some(NonPrimitive { value: vec![5] })),
-        NonPrimitiveSample::new(start + step * 6, Some(NonPrimitive { value: vec![6] })),
-        NonPrimitiveSample::new(start + step * 7, Some(NonPrimitive { value: vec![7] })),
-        NonPrimitiveSample::new(start + step * 8, Some(NonPrimitive { value: vec![8] })),
-        NonPrimitiveSample::new(start + step * 9, Some(NonPrimitive { value: vec![9] })),
-        NonPrimitiveSample::new(start + step * 10, Some(NonPrimitive { value: vec![10] })),
+        NonPrimitiveSample::new(start, Some(NonPrimitive { value: vec![1] })),
+        NonPrimitiveSample::new(start + step, Some(NonPrimitive { value: vec![2] })),
+        NonPrimitiveSample::new(start + step * 2, Some(NonPrimitive { value: vec![3] })),
+        NonPrimitiveSample::new(start + step * 3, Some(NonPrimitive { value: vec![4] })),
+        NonPrimitiveSample::new(start + step * 4, Some(NonPrimitive { value: vec![5] })),
+        NonPrimitiveSample::new(start + step * 5, Some(NonPrimitive { value: vec![6] })),
+        NonPrimitiveSample::new(start + step * 6, Some(NonPrimitive { value: vec![7] })),
+        NonPrimitiveSample::new(start + step * 7, Some(NonPrimitive { value: vec![8] })),
+        NonPrimitiveSample::new(start + step * 8, Some(NonPrimitive { value: vec![9] })),
+        NonPrimitiveSample::new(start + step * 9, Some(NonPrimitive { value: vec![10] })),
     ];
 
     resampler.extend(data);

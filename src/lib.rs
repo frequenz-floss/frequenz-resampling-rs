@@ -47,17 +47,20 @@ let mut resampler: Resampler<f64, TestSample> =
     Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start, false);
 
 let step = TimeDelta::seconds(1);
+// Data starts at t=0 with values 1-10
+// Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → avg = 3.0
+// Interval [5, 10): t=5,6,7,8,9 with values 6,7,8,9,10 → avg = 8.0
 let data = vec![
-    TestSample::new(start + step, Some(1.0)),
-    TestSample::new(start + step * 2, Some(2.0)),
-    TestSample::new(start + step * 3, Some(3.0)),
-    TestSample::new(start + step * 4, Some(4.0)),
-    TestSample::new(start + step * 5, Some(5.0)),
-    TestSample::new(start + step * 6, Some(6.0)),
-    TestSample::new(start + step * 7, Some(7.0)),
-    TestSample::new(start + step * 8, Some(8.0)),
-    TestSample::new(start + step * 9, Some(9.0)),
-    TestSample::new(start + step * 10, Some(10.0)),
+    TestSample::new(start, Some(1.0)),
+    TestSample::new(start + step, Some(2.0)),
+    TestSample::new(start + step * 2, Some(3.0)),
+    TestSample::new(start + step * 3, Some(4.0)),
+    TestSample::new(start + step * 4, Some(5.0)),
+    TestSample::new(start + step * 5, Some(6.0)),
+    TestSample::new(start + step * 6, Some(7.0)),
+    TestSample::new(start + step * 7, Some(8.0)),
+    TestSample::new(start + step * 8, Some(9.0)),
+    TestSample::new(start + step * 9, Some(10.0)),
 ];
 
 resampler.extend(data);
