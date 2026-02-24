@@ -20,8 +20,11 @@ def test_resampler_resampling_function_average() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 11):
-        resampler.push_sample(timestamp=start + i * step, value=i)
+    # Data starts at t=0 with values 1-10
+    # Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → avg = 3.0
+    # Interval [5, 10): t=5,6,7,8,9 with values 6,7,8,9,10 → avg = 8.0
+    for i in range(10):
+        resampler.push_sample(timestamp=start + i * step, value=i + 1)
 
     expected = [
         (start + 5 * step, 3.0),
@@ -45,8 +48,11 @@ def test_resampler_resampling_function_sum() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 11):
-        resampler.push_sample(timestamp=start + i * step, value=i)
+    # Data starts at t=0 with values 1-10
+    # Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → sum = 15.0
+    # Interval [5, 10): t=5,6,7,8,9 with values 6,7,8,9,10 → sum = 40.0
+    for i in range(10):
+        resampler.push_sample(timestamp=start + i * step, value=i + 1)
 
     expected = [
         (start + 5 * step, 15.0),
@@ -70,8 +76,11 @@ def test_resampler_resampling_function_max() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 11):
-        resampler.push_sample(timestamp=start + i * step, value=i)
+    # Data starts at t=0 with values 1-10
+    # Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → max = 5.0
+    # Interval [5, 10): t=5,6,7,8,9 with values 6,7,8,9,10 → max = 10.0
+    for i in range(10):
+        resampler.push_sample(timestamp=start + i * step, value=i + 1)
 
     expected = [
         (start + 5 * step, 5.0),
@@ -95,8 +104,11 @@ def test_resampler_resampling_function_min() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 11):
-        resampler.push_sample(timestamp=start + i * step, value=i)
+    # Data starts at t=0 with values 1-10
+    # Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → min = 1.0
+    # Interval [5, 10): t=5,6,7,8,9 with values 6,7,8,9,10 → min = 6.0
+    for i in range(10):
+        resampler.push_sample(timestamp=start + i * step, value=i + 1)
 
     expected = [
         (start + 5 * step, 1.0),
@@ -120,8 +132,11 @@ def test_resampler_resampling_function_first() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 11):
-        resampler.push_sample(timestamp=start + i * step, value=i)
+    # Data starts at t=0 with values 1-10
+    # Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → first = 1.0
+    # Interval [5, 10): t=5,6,7,8,9 with values 6,7,8,9,10 → first = 6.0
+    for i in range(10):
+        resampler.push_sample(timestamp=start + i * step, value=i + 1)
 
     expected = [
         (start + 5 * step, 1.0),
@@ -145,8 +160,11 @@ def test_resampler_resampling_function_last() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 11):
-        resampler.push_sample(timestamp=start + i * step, value=i)
+    # Data starts at t=0 with values 1-10
+    # Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → last = 5.0
+    # Interval [5, 10): t=5,6,7,8,9 with values 6,7,8,9,10 → last = 10.0
+    for i in range(10):
+        resampler.push_sample(timestamp=start + i * step, value=i + 1)
 
     expected = [
         (start + 5 * step, 5.0),
@@ -170,11 +188,14 @@ def test_resampler_resampling_function_coalesce() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 11):
-        if i == 6:
+    # Data starts at t=0 with values 1-10, but t=5 is None
+    # Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → coalesce = 1.0
+    # Interval [5, 10): t=5,6,7,8,9 with values None,7,8,9,10 → coalesce = 7.0
+    for i in range(10):
+        if i == 5:
             resampler.push_sample(timestamp=start + i * step, value=None)
         else:
-            resampler.push_sample(timestamp=start + i * step, value=i)
+            resampler.push_sample(timestamp=start + i * step, value=i + 1)
 
     expected = [
         (start + 5 * step, 1.0),
@@ -198,8 +219,11 @@ def test_resampler_resampling_function_count() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 11):
-        resampler.push_sample(timestamp=start + i * step, value=i)
+    # Data starts at t=0 with values 1-10
+    # Interval [0, 5): t=0,1,2,3,4 → count = 5.0
+    # Interval [5, 10): t=5,6,7,8,9 → count = 5.0
+    for i in range(10):
+        resampler.push_sample(timestamp=start + i * step, value=i + 1)
 
     expected = [
         (start + 5 * step, 5.0),
@@ -223,7 +247,8 @@ def test_resampling_none() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 11):
+    # All values are None
+    for i in range(10):
         resampler.push_sample(timestamp=start + i * step, value=None)
 
     expected = [
@@ -333,7 +358,7 @@ def test_resampler_first_timestamp() -> None:
 
 
 def test_resampler_last_timestamp() -> None:
-    """Test the resampler with the last timestamp."""
+    """Test the resampler with the last timestamp (first_timestamp=False)."""
     start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
     step = dt.timedelta(seconds=0.5)
     resampler = Resampler(
@@ -344,8 +369,11 @@ def test_resampler_last_timestamp() -> None:
         first_timestamp=False,
     )
 
-    for i in range(1, 21):
-        resampler.push_sample(timestamp=start + i * step, value=i)
+    # Data starts at t=0, step=0.5s, 20 samples
+    # Interval [0, 5): t=0,0.5,1,1.5,2,2.5,3,3.5,4,4.5 → values 1-10 → avg = 5.5
+    # Interval [5, 10): t=5,5.5,6,6.5,7,7.5,8,8.5,9,9.5 → values 11-20 → avg = 15.5
+    for i in range(20):
+        resampler.push_sample(timestamp=start + i * step, value=i + 1)
 
     expected = [
         (start + 10 * step, 5.5),
