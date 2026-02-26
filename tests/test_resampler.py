@@ -5,7 +5,7 @@
 
 import datetime as dt
 
-from frequenz.resampling import Resampler, ResamplingFunction
+from frequenz.resampling import Resampler, ResamplingFunction, resample
 
 
 def test_resampler_resampling_function_average() -> None:
@@ -383,3 +383,135 @@ def test_resampler_last_timestamp() -> None:
     resampled = resampler.resample(start + 20 * step)
 
     assert resampled == expected
+
+
+# Tests for the one-shot resample function
+
+
+def test_resample_function_basic() -> None:
+    """Test the resample function with basic usage."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=1)
+
+    # Data: t=0,1,2,3,4,5,6,7,8,9 with values 1-10
+    # Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → avg = 3.0
+    # Interval [5, 10): t=5,6,7,8,9 with values 6,7,8,9,10 → avg = 8.0
+    data = [(start + i * step, float(i + 1)) for i in range(10)]
+
+    result = resample(data, dt.timedelta(seconds=5), ResamplingFunction.Average)
+
+    assert len(result) == 2
+    assert result[0] == (start, 3.0)
+    assert result[1] == (start + 5 * step, 8.0)
+
+
+def test_resample_function_first_timestamp_false() -> None:
+    """Test the resample function with first_timestamp=False."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=1)
+
+    data = [(start + i * step, float(i + 1)) for i in range(10)]
+
+    result = resample(
+        data, dt.timedelta(seconds=5), ResamplingFunction.Average, first_timestamp=False
+    )
+
+    assert len(result) == 2
+    # With first_timestamp=False, timestamps are at end of interval
+    assert result[0] == (start + 5 * step, 3.0)
+    assert result[1] == (start + 10 * step, 8.0)
+
+
+def test_resample_function_empty_data() -> None:
+    """Test the resample function with empty data."""
+    data: list[tuple[dt.datetime, float | None]] = []
+
+    result = resample(data, dt.timedelta(seconds=5), ResamplingFunction.Average)
+
+    assert result == []
+
+
+def test_resample_function_with_none_values() -> None:
+    """Test the resample function with None values."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=1)
+
+    # First value in each interval is None
+    data: list[tuple[dt.datetime, float | None]] = [
+        (start + i * step, None if i in (0, 5) else float(i + 1)) for i in range(10)
+    ]
+
+    result = resample(data, dt.timedelta(seconds=5), ResamplingFunction.Average)
+
+    assert len(result) == 2
+    # Interval [0, 5): values 2,3,4,5 → avg = 3.5
+    # Interval [5, 10): values 7,8,9,10 → avg = 8.5
+    assert result[0] == (start, 3.5)
+    assert result[1] == (start + 5 * step, 8.5)
+
+
+def test_resample_function_sum() -> None:
+    """Test the resample function with Sum method."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=1)
+
+    data = [(start + i * step, float(i + 1)) for i in range(10)]
+
+    result = resample(data, dt.timedelta(seconds=5), ResamplingFunction.Sum)
+
+    assert len(result) == 2
+    # Interval [0, 5): sum(1,2,3,4,5) = 15.0
+    # Interval [5, 10): sum(6,7,8,9,10) = 40.0
+    assert result[0] == (start, 15.0)
+    assert result[1] == (start + 5 * step, 40.0)
+
+
+def test_resample_function_min_max() -> None:
+    """Test the resample function with Min and Max methods."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=1)
+
+    data = [(start + i * step, float(i + 1)) for i in range(10)]
+
+    min_result = resample(data, dt.timedelta(seconds=5), ResamplingFunction.Min)
+    max_result = resample(data, dt.timedelta(seconds=5), ResamplingFunction.Max)
+
+    assert min_result[0] == (start, 1.0)
+    assert min_result[1] == (start + 5 * step, 6.0)
+    assert max_result[0] == (start, 5.0)
+    assert max_result[1] == (start + 5 * step, 10.0)
+
+
+def test_resample_function_single_sample() -> None:
+    """Test the resample function with a single sample."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+
+    data = [(start, 42.0)]
+
+    result = resample(data, dt.timedelta(seconds=5), ResamplingFunction.Average)
+
+    assert len(result) == 1
+    assert result[0] == (start, 42.0)
+
+
+def test_resample_function_all_methods() -> None:
+    """Test the resample function with all resampling methods."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=1)
+
+    data = [(start + i * step, float(i + 1)) for i in range(5)]
+
+    # Test all methods work without errors
+    for method in [
+        ResamplingFunction.Average,
+        ResamplingFunction.Sum,
+        ResamplingFunction.Min,
+        ResamplingFunction.Max,
+        ResamplingFunction.First,
+        ResamplingFunction.Last,
+        ResamplingFunction.Count,
+        ResamplingFunction.Coalesce,
+    ]:
+        result = resample(data, dt.timedelta(seconds=5), method)
+        assert len(result) == 1
+        assert result[0][0] == start

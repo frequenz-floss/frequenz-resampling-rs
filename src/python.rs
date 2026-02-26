@@ -159,6 +159,59 @@ impl From<ResamplingFunctionF32> for ResamplingFunction<f32, PythonSample> {
     }
 }
 
+impl From<ResamplingFunctionF32> for ResamplingFunction<f64, crate::SimpleSample> {
+    fn from(resampling_function: ResamplingFunctionF32) -> Self {
+        match resampling_function {
+            ResamplingFunctionF32::Average => ResamplingFunction::Average,
+            ResamplingFunctionF32::Sum => ResamplingFunction::Sum,
+            ResamplingFunctionF32::Max => ResamplingFunction::Max,
+            ResamplingFunctionF32::Min => ResamplingFunction::Min,
+            ResamplingFunctionF32::First => ResamplingFunction::First,
+            ResamplingFunctionF32::Last => ResamplingFunction::Last,
+            ResamplingFunctionF32::Coalesce => ResamplingFunction::Coalesce,
+            ResamplingFunctionF32::Count => ResamplingFunction::Count,
+        }
+    }
+}
+
+/// Resamples a list of timestamp/value pairs in a single call.
+///
+/// This is a convenience function for one-shot resampling without needing to
+/// manage a `Resampler` instance.
+///
+/// Args:
+///     data: A list of (timestamp, value) tuples to resample. Must be sorted by timestamp.
+///     interval: The resampling interval.
+///     method: The resampling function to use for aggregating values within each interval.
+///     first_timestamp: If True, output timestamps are set to the start of each interval.
+///         If False, output timestamps are set to the end of each interval. Defaults to True.
+///
+/// Returns:
+///     A list of (timestamp, value) tuples representing the resampled data.
+#[pyfunction]
+#[pyo3(signature = (data, interval, method, *, first_timestamp=true))]
+fn resample(
+    data: Vec<(DateTime<Utc>, Option<f32>)>,
+    interval: TimeDelta,
+    method: ResamplingFunctionF32,
+    first_timestamp: bool,
+) -> PyResult<Vec<(DateTime<Utc>, Option<f32>)>> {
+    // Convert f32 to f64 for the Rust implementation
+    let data_f64: Vec<(DateTime<Utc>, Option<f64>)> = data
+        .into_iter()
+        .map(|(ts, val)| (ts, val.map(|v| v as f64)))
+        .collect();
+
+    // Call the Rust implementation
+    let result = crate::resample(&data_f64, interval, method.into(), first_timestamp);
+
+    // Convert f64 back to f32
+    Ok(result
+        .into_iter()
+        .map(|(ts, val)| (ts, val.map(|v| v as f32)))
+        .collect())
+}
+
 /// The Resampler class for f32 values.
 #[pyclass(name = "Resampler")]
 struct ResamplerF32 {
@@ -208,5 +261,6 @@ impl ResamplerF32 {
 fn _rust_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<ResamplerF32>()?;
     m.add_class::<ResamplingFunctionF32>()?;
+    m.add_function(wrap_pyfunction!(resample, m)?)?;
     Ok(())
 }

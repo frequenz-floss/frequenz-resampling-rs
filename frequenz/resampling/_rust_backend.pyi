@@ -1,11 +1,11 @@
 # License: MIT
 # Copyright © 2024 Frequenz Energy-as-a-Service GmbH
 
-__all__ = "Resampler", "ResamplingFunction"
+__all__ = "Resampler", "ResamplingFunction", "resample"
 
 from datetime import datetime, timedelta
 from enum import Enum, unique
-from typing import Optional
+from typing import Optional, Sequence
 
 @unique
 class ResamplingFunction(Enum):
@@ -103,3 +103,28 @@ class Resampler:
         Returns:
             A list of tuples with the resampled samples.
         """
+
+
+def resample(
+    data: Sequence[tuple[datetime, Optional[float]]],
+    interval: timedelta,
+    method: ResamplingFunction,
+    *,
+    first_timestamp: bool = True,
+) -> list[tuple[datetime, Optional[float]]]:
+    """
+    Resamples a list of timestamp/value pairs in a single call.
+
+    This is a convenience function for one-shot resampling without needing to
+    manage a `Resampler` instance.
+
+    Args:
+        data: A list of (timestamp, value) tuples to resample. Must be sorted by timestamp.
+        interval: The resampling interval.
+        method: The resampling function to use for aggregating values within each interval.
+        first_timestamp: If True, output timestamps are set to the start of each interval.
+            If False, output timestamps are set to the end of each interval. Defaults to True.
+
+    Returns:
+        A list of (timestamp, value) tuples representing the resampled data.
+    """

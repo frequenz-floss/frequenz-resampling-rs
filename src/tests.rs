@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::resampler::{epoch_align, Resampler, Sample};
-use crate::ResamplingFunction;
+use crate::{resample, ResamplingFunction};
 use chrono::{DateTime, TimeDelta, Utc};
 use num_traits::FromPrimitive;
 
@@ -1079,4 +1079,189 @@ fn test_resampling_non_primitive_sum() {
         ),
     ];
     assert_eq!(resampled, expected);
+}
+
+// Tests for the one-shot resample function
+
+#[test]
+fn test_resample_function_basic() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+
+    // Data: t=0,1,2,3,4,5,6,7,8,9 with values 1-10
+    // Interval [0, 5): t=0,1,2,3,4 with values 1,2,3,4,5 → avg = 3.0
+    // Interval [5, 10): t=5,6,7,8,9 with values 6,7,8,9,10 → avg = 8.0
+    let data: Vec<(DateTime<Utc>, Option<f64>)> = (0..10)
+        .map(|i| (start + step * i, Some((i + 1) as f64)))
+        .collect();
+
+    let result = resample(
+        &data,
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        true,
+    );
+
+    assert_eq!(result.len(), 2);
+    assert_eq!(
+        result[0],
+        (DateTime::from_timestamp(0, 0).unwrap(), Some(3.0))
+    );
+    assert_eq!(
+        result[1],
+        (DateTime::from_timestamp(5, 0).unwrap(), Some(8.0))
+    );
+}
+
+#[test]
+fn test_resample_function_first_timestamp_false() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+
+    let data: Vec<(DateTime<Utc>, Option<f64>)> = (0..10)
+        .map(|i| (start + step * i, Some((i + 1) as f64)))
+        .collect();
+
+    let result = resample(
+        &data,
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        false,
+    );
+
+    assert_eq!(result.len(), 2);
+    // With first_timestamp=false, timestamps are at end of interval
+    assert_eq!(
+        result[0],
+        (DateTime::from_timestamp(5, 0).unwrap(), Some(3.0))
+    );
+    assert_eq!(
+        result[1],
+        (DateTime::from_timestamp(10, 0).unwrap(), Some(8.0))
+    );
+}
+
+#[test]
+fn test_resample_function_empty_data() {
+    let data: Vec<(DateTime<Utc>, Option<f64>)> = vec![];
+
+    let result = resample(
+        &data,
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        true,
+    );
+
+    assert!(result.is_empty());
+}
+
+#[test]
+fn test_resample_function_with_none_values() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+
+    // First value in each interval is None
+    let data: Vec<(DateTime<Utc>, Option<f64>)> = (0..10)
+        .map(|i| {
+            let value = if i == 0 || i == 5 {
+                None
+            } else {
+                Some((i + 1) as f64)
+            };
+            (start + step * i, value)
+        })
+        .collect();
+
+    let result = resample(
+        &data,
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        true,
+    );
+
+    assert_eq!(result.len(), 2);
+    // Interval [0, 5): values 2,3,4,5 → avg = 3.5
+    // Interval [5, 10): values 7,8,9,10 → avg = 8.5
+    assert_eq!(
+        result[0],
+        (DateTime::from_timestamp(0, 0).unwrap(), Some(3.5))
+    );
+    assert_eq!(
+        result[1],
+        (DateTime::from_timestamp(5, 0).unwrap(), Some(8.5))
+    );
+}
+
+#[test]
+fn test_resample_function_sum() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+
+    let data: Vec<(DateTime<Utc>, Option<f64>)> = (0..10)
+        .map(|i| (start + step * i, Some((i + 1) as f64)))
+        .collect();
+
+    let result = resample(&data, TimeDelta::seconds(5), ResamplingFunction::Sum, true);
+
+    assert_eq!(result.len(), 2);
+    // Interval [0, 5): sum(1,2,3,4,5) = 15.0
+    // Interval [5, 10): sum(6,7,8,9,10) = 40.0
+    assert_eq!(
+        result[0],
+        (DateTime::from_timestamp(0, 0).unwrap(), Some(15.0))
+    );
+    assert_eq!(
+        result[1],
+        (DateTime::from_timestamp(5, 0).unwrap(), Some(40.0))
+    );
+}
+
+#[test]
+fn test_resample_function_min_max() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+
+    let data: Vec<(DateTime<Utc>, Option<f64>)> = (0..10)
+        .map(|i| (start + step * i, Some((i + 1) as f64)))
+        .collect();
+
+    let min_result = resample(&data, TimeDelta::seconds(5), ResamplingFunction::Min, true);
+    let max_result = resample(&data, TimeDelta::seconds(5), ResamplingFunction::Max, true);
+
+    assert_eq!(
+        min_result[0],
+        (DateTime::from_timestamp(0, 0).unwrap(), Some(1.0))
+    );
+    assert_eq!(
+        min_result[1],
+        (DateTime::from_timestamp(5, 0).unwrap(), Some(6.0))
+    );
+    assert_eq!(
+        max_result[0],
+        (DateTime::from_timestamp(0, 0).unwrap(), Some(5.0))
+    );
+    assert_eq!(
+        max_result[1],
+        (DateTime::from_timestamp(5, 0).unwrap(), Some(10.0))
+    );
+}
+
+#[test]
+fn test_resample_function_single_sample() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+
+    let data: Vec<(DateTime<Utc>, Option<f64>)> = vec![(start, Some(42.0))];
+
+    let result = resample(
+        &data,
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        true,
+    );
+
+    assert_eq!(result.len(), 1);
+    assert_eq!(
+        result[0],
+        (DateTime::from_timestamp(0, 0).unwrap(), Some(42.0))
+    );
 }

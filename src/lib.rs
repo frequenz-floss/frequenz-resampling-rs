@@ -87,4 +87,95 @@ mod python;
 mod resampling_function;
 pub use resampling_function::ResamplingFunction;
 
-pub use resampler::{Resampler, Sample};
+pub use resampler::{epoch_align, Resampler, Sample};
+
+use chrono::{DateTime, TimeDelta, Utc};
+
+/// A simple sample type for use with the `resample` function.
+#[derive(Default, Clone, Debug, Copy, PartialEq)]
+pub struct SimpleSample {
+    timestamp: DateTime<Utc>,
+    value: Option<f64>,
+}
+
+impl Sample for SimpleSample {
+    type Value = f64;
+
+    fn new(timestamp: DateTime<Utc>, value: Option<f64>) -> Self {
+        Self { timestamp, value }
+    }
+
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+
+    fn value(&self) -> Option<f64> {
+        self.value
+    }
+}
+
+/// Resamples a list of timestamp/value pairs in a single call.
+///
+/// This is a convenience function for one-shot resampling without needing to
+/// manage a `Resampler` instance.
+///
+/// # Arguments
+///
+/// * `data` - A slice of (timestamp, value) tuples to resample. Must be sorted by timestamp.
+/// * `interval` - The resampling interval.
+/// * `resampling_function` - The function to use for aggregating values within each interval.
+/// * `first_timestamp` - If `true`, output timestamps are set to the start of each interval.
+///   If `false`, output timestamps are set to the end of each interval.
+///
+/// # Returns
+///
+/// A vector of (timestamp, value) tuples representing the resampled data.
+///
+/// # Example
+///
+/// ```rust
+/// use chrono::{DateTime, TimeDelta, Utc};
+/// use frequenz_resampling::{resample, ResamplingFunction, SimpleSample};
+///
+/// let start = DateTime::from_timestamp(0, 0).unwrap();
+/// let step = TimeDelta::seconds(1);
+/// let data: Vec<(DateTime<Utc>, Option<f64>)> = (0..10)
+///     .map(|i| (start + step * i, Some((i + 1) as f64)))
+///     .collect();
+///
+/// let result = resample(&data, TimeDelta::seconds(5), ResamplingFunction::Average, true);
+/// // Result: [(t=0, 3.0), (t=5, 8.0)]
+/// assert_eq!(result.len(), 2);
+/// assert_eq!(result[0].1, Some(3.0));
+/// assert_eq!(result[1].1, Some(8.0));
+/// ```
+pub fn resample(
+    data: &[(DateTime<Utc>, Option<f64>)],
+    interval: TimeDelta,
+    resampling_function: ResamplingFunction<f64, SimpleSample>,
+    first_timestamp: bool,
+) -> Vec<(DateTime<Utc>, Option<f64>)> {
+    let (Some(first_ts), Some(last_ts)) = (
+        data.first().map(|(ts, _)| *ts),
+        data.last().map(|(ts, _)| *ts),
+    ) else {
+        return vec![];
+    };
+
+    let aligned_start = epoch_align(interval, first_ts, None);
+    let end = epoch_align(interval, last_ts, None) + interval;
+
+    let mut resampler: Resampler<f64, SimpleSample> = Resampler::new(
+        interval,
+        resampling_function,
+        1,
+        aligned_start,
+        first_timestamp,
+    );
+    resampler.extend(data.iter().map(|(ts, val)| SimpleSample::new(*ts, *val)));
+    resampler
+        .resample(end)
+        .into_iter()
+        .map(|s| (s.timestamp(), s.value()))
+        .collect()
+}

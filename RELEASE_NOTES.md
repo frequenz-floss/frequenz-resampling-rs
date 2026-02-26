@@ -7,3 +7,4 @@
 ## New Features
 
 - `ResamplingFunction` now implements `Clone`.
+- Added `resample()` function for one-shot resampling without managing a `Resampler` instance. Available in both Rust and Python.

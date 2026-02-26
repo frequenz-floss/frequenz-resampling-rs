@@ -242,7 +242,7 @@ impl<
 }
 
 /// Aligns a timestamp to the epoch of the resampling interval.
-pub(crate) fn epoch_align(
+pub fn epoch_align(
     interval: TimeDelta,
     timestamp: DateTime<Utc>,
     alignment_timestamp: Option<DateTime<Utc>>,
