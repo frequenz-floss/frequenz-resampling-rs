@@ -104,15 +104,20 @@ pub struct Resampler<
     input_start: Option<DateTime<Utc>>,
     /// The interval between the first and the second sample in the buffer
     input_interval: Option<TimeDelta>,
-    /// Whether the resampled timestamp should be the first timestamp (if
-    /// `first_timestamp` is `true`) or the last timestamp (if
-    /// `first_timestamp` is `false`) in the buffer.
-    /// If `first_timestamp` is `true`, the resampled timestamp will be the
-    /// timestamp of the first sample in the buffer and the aggregation will
-    /// be done with the samples that are `interval` in the future.
-    /// If `first_timestamp` is `false`, the resampled timestamp will be the
-    /// timestamp of the last sample in the buffer and the aggregation will
-    /// be done with the samples that are `interval` in the past.
+    /// Controls the output timestamp labeling for resampled samples.
+    ///
+    /// This parameter only affects how output timestamps are labeled, not how
+    /// samples are grouped into intervals. Intervals are always `[start, end)`.
+    ///
+    /// - If `first_timestamp` is `true`, the output timestamp is set to the
+    ///   start of the interval.
+    /// - If `first_timestamp` is `false`, the output timestamp is set to the
+    ///   end of the interval.
+    ///
+    /// For example, with an interval of 5 seconds starting at t=0:
+    /// - Interval `[0, 5)` contains samples with timestamps 0, 1, 2, 3, 4
+    /// - If `first_timestamp=true`: output timestamp = 0
+    /// - If `first_timestamp=false`: output timestamp = 5
     first_timestamp: bool,
 }
 
@@ -173,13 +178,7 @@ impl<
         while self.start < end {
             // loop over the samples in the buffer
             while next_sample
-                .map(|s| {
-                    is_left_of_buffer_edge(
-                        self.first_timestamp,
-                        &s.timestamp(),
-                        &(self.start + self.interval),
-                    )
-                })
+                .map(|s| is_left_of_buffer_edge(&s.timestamp(), &(self.start + self.interval)))
                 .unwrap_or(false)
             {
                 // next sample is not newer than the current interval
@@ -204,9 +203,7 @@ impl<
             let input_interval = self.input_interval.unwrap_or(self.interval);
             let drain_end_date =
                 self.start + self.interval - input_interval * self.max_age_in_intervals;
-            interval_buffer.retain(|s| {
-                is_right_of_buffer_edge(self.first_timestamp, &s.timestamp(), &drain_end_date)
-            });
+            interval_buffer.retain(|s| is_right_of_buffer_edge(&s.timestamp(), &drain_end_date));
 
             // resample the interval_buffer
             res.push(Sample::new(
@@ -221,9 +218,8 @@ impl<
         // Remove samples from buffer that are older than max_age
         let interval = self.input_interval.unwrap_or(self.interval);
         let drain_end_date = end - interval * self.max_age_in_intervals;
-        self.buffer.retain(|s| {
-            is_right_of_buffer_edge(self.first_timestamp, &s.timestamp(), &drain_end_date)
-        });
+        self.buffer
+            .retain(|s| is_right_of_buffer_edge(&s.timestamp(), &drain_end_date));
 
         res
     }
@@ -259,26 +255,16 @@ pub(crate) fn epoch_align(
     .unwrap_or(timestamp)
 }
 
-fn is_left_of_buffer_edge(
-    first_timestamp: bool,
-    timestamp: &DateTime<Utc>,
-    edge_timestamp: &DateTime<Utc>,
-) -> bool {
-    if first_timestamp {
-        timestamp < edge_timestamp
-    } else {
-        timestamp <= edge_timestamp
-    }
+/// Checks if a timestamp is within the interval for aggregation.
+/// Uses exclusive upper bound: sample is included if timestamp < edge.
+/// This creates intervals of the form [start, end).
+fn is_left_of_buffer_edge(timestamp: &DateTime<Utc>, edge_timestamp: &DateTime<Utc>) -> bool {
+    timestamp < edge_timestamp
 }
 
-fn is_right_of_buffer_edge(
-    first_timestamp: bool,
-    timestamp: &DateTime<Utc>,
-    edge_timestamp: &DateTime<Utc>,
-) -> bool {
-    if first_timestamp {
-        timestamp >= edge_timestamp
-    } else {
-        timestamp > edge_timestamp
-    }
+/// Checks if a timestamp should be retained in the buffer.
+/// Uses inclusive lower bound: sample is retained if timestamp >= edge.
+/// This creates intervals of the form [start, end).
+fn is_right_of_buffer_edge(timestamp: &DateTime<Utc>, edge_timestamp: &DateTime<Utc>) -> bool {
+    timestamp >= edge_timestamp
 }
