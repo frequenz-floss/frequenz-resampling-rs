@@ -41,15 +41,14 @@ fn test_resampling(
     expected: Vec<TestSample>,
 ) {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(
-            TimeDelta::seconds(5),
-            resampling_function,
-            1,
-            start,
-            Closed::Left,
-            Label::Right,
-        );
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        resampling_function,
+        1,
+        start,
+        Closed::Left,
+        Label::Right,
+    );
     let step = TimeDelta::seconds(1);
     // Data starts at t=0, matching the README example
     // Interval [0, 5) contains t=0,1,2,3,4 with values 1,2,3,4,5
@@ -78,15 +77,14 @@ fn test_resampling_with_none_first(
     expected: Vec<TestSample>,
 ) {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(
-            TimeDelta::seconds(5),
-            resampling_function,
-            1,
-            start,
-            Closed::Left,
-            Label::Right,
-        );
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        resampling_function,
+        1,
+        start,
+        Closed::Left,
+        Label::Right,
+    );
     let step = TimeDelta::seconds(1);
     // First sample at t=0 is None
     // Interval [0, 5) contains t=0,1,2,3,4 with values None,2,3,4,5
@@ -115,15 +113,14 @@ fn test_resampling_with_none_all(
     expected: Vec<TestSample>,
 ) {
     let start = DateTime::from_timestamp(0, 0).unwrap();
-    let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(
-            TimeDelta::seconds(5),
-            resampling_function,
-            1,
-            start,
-            Closed::Left,
-            Label::Right,
-        );
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        resampling_function,
+        1,
+        start,
+        Closed::Left,
+        Label::Right,
+    );
     let step = TimeDelta::seconds(1);
     // All values are None
     let data = vec![
@@ -1211,6 +1208,29 @@ fn test_resample_function_label_right() {
     assert_eq!(
         result[1],
         (DateTime::from_timestamp(10, 0).unwrap(), Some(8.0))
+    );
+}
+
+#[test]
+fn test_resample_function_closed_right() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+    let data = vec![(start, Some(10.0)), (start + step * 5, Some(20.0))];
+
+    let result = resample(
+        &data,
+        TimeDelta::seconds(5),
+        ResamplingFunction::Sum,
+        Closed::Right,
+        Label::Right,
+    );
+
+    assert_eq!(
+        result,
+        vec![
+            (DateTime::from_timestamp(0, 0).unwrap(), Some(10.0)),
+            (DateTime::from_timestamp(5, 0).unwrap(), Some(20.0)),
+        ]
     );
 }
 

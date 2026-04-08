@@ -1,11 +1,11 @@
 # License: MIT
 # Copyright © 2024 Frequenz Energy-as-a-Service GmbH
 
-__all__ = "Resampler", "ResamplingFunction", "resample"
+__all__ = "Closed", "Label", "Resampler", "ResamplingFunction", "resample"
 
 from datetime import datetime, timedelta
 from enum import Enum, unique
-from typing import Literal, Optional, Sequence
+from typing import Optional, Sequence
 
 @unique
 class ResamplingFunction(Enum):
@@ -49,6 +49,40 @@ class ResamplingFunction(Enum):
             A list of all members of the enum.
         """
 
+@unique
+class Closed(Enum):
+    """Controls which edge of an interval is closed for sample membership."""
+
+    Left = 0
+    """Left-closed, right-open intervals: `[start, end)`"""
+    Right = 1
+    """Left-open, right-closed intervals: `(start, end]`"""
+
+    @staticmethod
+    def values() -> list[int]:
+        """Returns a list of all values of the enum."""
+
+    @staticmethod
+    def members() -> list[tuple[str, int]]:
+        """Returns a list of all members of the enum."""
+
+@unique
+class Label(Enum):
+    """Controls which edge of an interval is used as the output timestamp."""
+
+    Left = 0
+    """Use the interval start as the output timestamp"""
+    Right = 1
+    """Use the interval end as the output timestamp"""
+
+    @staticmethod
+    def values() -> list[int]:
+        """Returns a list of all values of the enum."""
+
+    @staticmethod
+    def members() -> list[tuple[str, int]]:
+        """Returns a list of all members of the enum."""
+
 class Resampler:
     """
     The Resampler class is used to resample a time series of samples.
@@ -65,8 +99,8 @@ class Resampler:
         *,
         max_age_in_intervals: int,
         start: datetime,
-        closed: Literal["left", "right"],
-        label: Literal["left", "right"],
+        closed: Closed,
+        label: Label,
     ):
         """
         Initializes a new Resampler object.
@@ -76,12 +110,13 @@ class Resampler:
             resampling_function: The resampling function.
             max_age_in_intervals: The maximum age of a sample in intervals.
             start: The start time of the resampling.
-            closed: Controls which interval edge is closed for sample
-                membership. Use `"left"` for `[start, end)` intervals or
-                `"right"` for `(start, end]` intervals.
-            label: Controls the output timestamp labeling. Use `"left"` to
-                label each interval with its start or `"right"` to label it
-                with its end.
+            closed: Which interval edge is closed for sample membership. Use
+                `"left"` for left-closed, right-open intervals `[start, end)`
+                and `"right"` for right-closed, left-open intervals
+                `(start, end]`.
+            label: Which interval edge to use for output timestamps. Use
+                `"left"` for the left bin edge and `"right"` for the right
+                bin edge.
         """
 
     def push_sample(self, *, timestamp: datetime, value: Optional[float]) -> None:
@@ -113,8 +148,8 @@ def resample(
     interval: timedelta,
     method: ResamplingFunction,
     *,
-    closed: Literal["left", "right"],
-    label: Literal["left", "right"],
+    closed: Closed,
+    label: Label,
 ) -> list[tuple[datetime, Optional[float]]]:
     """
     Resamples a list of timestamp/value pairs in a single call.
@@ -127,10 +162,10 @@ def resample(
         interval: The resampling interval.
         method: The resampling function to use for aggregating values within each interval.
         closed: Which interval edge is closed for sample membership. Use
-            `"left"` for `[start, end)` intervals or `"right"` for
-            `(start, end]` intervals.
+            `"left"` for left-closed, right-open intervals `[start, end)`
+            and `"right"` for right-closed, left-open intervals `(start, end]`.
         label: Which interval edge to use for output timestamps. Use `"left"`
-            for the interval start or `"right"` for the interval end.
+            for the left bin edge and `"right"` for the right bin edge.
 
     Returns:
         A list of (timestamp, value) tuples representing the resampled data.

@@ -89,7 +89,7 @@ For simple use cases where you want to resample data in a single call, use the `
 
 ```python
 import datetime as dt
-from frequenz.resampling import resample, ResamplingFunction
+from frequenz.resampling import Closed, Label, resample, ResamplingFunction
 
 start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
 step = dt.timedelta(seconds=1)
@@ -99,8 +99,8 @@ result = resample(
     data,
     dt.timedelta(seconds=5),
     ResamplingFunction.Average,
-    closed="left",
-    label="left",
+    closed=Closed.Left,
+    label=Label.Left,
 )
 # Result: [(t=0, 3.0), (t=5, 8.0)]
 ```
@@ -116,7 +116,7 @@ first resampled sample.
 
 ```python
 import datetime as dt
-from frequenz.resampling import Resampler, ResamplingFunction
+from frequenz.resampling import Closed, Label, Resampler, ResamplingFunction
 
 
 start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
@@ -126,8 +126,8 @@ resampler = Resampler(
     ResamplingFunction.Average,
     max_age_in_intervals=1,
     start=start,
-    closed="left",
-    label="right",
+    closed=Closed.Left,
+    label=Label.Right,
 )
 
 for i in range(10):

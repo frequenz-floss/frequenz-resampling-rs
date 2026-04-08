@@ -4,11 +4,11 @@
 """Tests to verify that the resampler can be used successfully from Python."""
 
 import datetime as dt
+from typing import Literal
 
 import pandas as pd
 import pytest
-
-from frequenz.resampling import Resampler, ResamplingFunction, resample
+from frequenz.resampling import Closed, Label, Resampler, ResamplingFunction, resample
 
 
 def test_resampler_resampling_function_average() -> None:
@@ -20,8 +20,8 @@ def test_resampler_resampling_function_average() -> None:
         ResamplingFunction.Average,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # Data starts at t=0 with values 1-10
@@ -49,8 +49,8 @@ def test_resampler_resampling_function_sum() -> None:
         ResamplingFunction.Sum,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # Data starts at t=0 with values 1-10
@@ -78,8 +78,8 @@ def test_resampler_resampling_function_max() -> None:
         ResamplingFunction.Max,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # Data starts at t=0 with values 1-10
@@ -107,8 +107,8 @@ def test_resampler_resampling_function_min() -> None:
         ResamplingFunction.Min,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # Data starts at t=0 with values 1-10
@@ -136,8 +136,8 @@ def test_resampler_resampling_function_first() -> None:
         ResamplingFunction.First,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # Data starts at t=0 with values 1-10
@@ -165,8 +165,8 @@ def test_resampler_resampling_function_last() -> None:
         ResamplingFunction.Last,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # Data starts at t=0 with values 1-10
@@ -194,8 +194,8 @@ def test_resampler_resampling_function_coalesce() -> None:
         ResamplingFunction.Coalesce,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # Data starts at t=0 with values 1-10, but t=5 is None
@@ -226,8 +226,8 @@ def test_resampler_resampling_function_count() -> None:
         ResamplingFunction.Count,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # Data starts at t=0 with values 1-10
@@ -255,8 +255,8 @@ def test_resampling_none() -> None:
         ResamplingFunction.Average,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # All values are None
@@ -353,8 +353,8 @@ def test_resampler_label_left() -> None:
         ResamplingFunction.Average,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="left",
+        closed=Closed.Left,
+        label=Label.Left,
     )
 
     for i in range(0, 20):
@@ -379,8 +379,8 @@ def test_resampler_last_timestamp() -> None:
         ResamplingFunction.Average,
         max_age_in_intervals=1,
         start=start,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     # Data starts at t=0, step=0.5s, 20 samples
@@ -416,8 +416,8 @@ def test_resample_function_basic() -> None:
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Average,
-        closed="left",
-        label="left",
+        closed=Closed.Left,
+        label=Label.Left,
     )
 
     assert len(result) == 2
@@ -436,8 +436,8 @@ def test_resample_function_label_right() -> None:
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Average,
-        closed="left",
-        label="right",
+        closed=Closed.Left,
+        label=Label.Right,
     )
 
     assert len(result) == 2
@@ -459,17 +459,31 @@ def test_resample_function_closed_right() -> None:
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Sum,
-        closed="right",
-        label="right",
+        closed=Closed.Right,
+        label=Label.Right,
     )
 
     assert result == [
+        (start, 10.0),
         (start + 5 * step, 20.0),
-        (start + 10 * step, None),
     ]
 
 
-def test_resample_function_matches_pandas() -> None:
+@pytest.mark.parametrize(
+    ("closed", "label", "pandas_closed", "pandas_label"),
+    [
+        (Closed.Left, Label.Left, "left", "left"),
+        (Closed.Left, Label.Right, "left", "right"),
+        (Closed.Right, Label.Left, "right", "left"),
+        (Closed.Right, Label.Right, "right", "right"),
+    ],
+)
+def test_resample_function_matches_pandas(
+    closed: Closed,
+    label: Label,
+    pandas_closed: Literal["left", "right"],
+    pandas_label: Literal["left", "right"],
+) -> None:
     """Test the one-shot API against pandas with matching closed/label settings."""
     start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
     step = dt.timedelta(seconds=1)
@@ -479,8 +493,8 @@ def test_resample_function_matches_pandas() -> None:
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Average,
-        closed="left",
-        label="right",
+        closed=closed,
+        label=label,
     )
 
     pandas_series = pd.Series(
@@ -488,73 +502,41 @@ def test_resample_function_matches_pandas() -> None:
         index=pd.DatetimeIndex([timestamp for timestamp, _ in data]),
         dtype="float64",
     )
-    pandas_result = pandas_series.resample("5s", closed="left", label="right").mean()
+    pandas_result = pandas_series.resample(
+        "5s", closed=pandas_closed, label=pandas_label
+    ).mean()
     expected = [
         (timestamp.to_pydatetime(), float(value))
-        for timestamp, value in pandas_result.items()
+        for timestamp, value in zip(
+            pandas_result.index, pandas_result.to_list(), strict=True
+        )
     ]
 
     assert result == expected
 
 
-def test_resample_function_invalid_label() -> None:
-    """Test the resample function rejects invalid labels."""
-    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
-    data = [(start, 1.0)]
-
+def test_label_init_invalid_value() -> None:
+    """Test the Label enum rejects invalid values."""
     with pytest.raises(ValueError, match="Invalid label"):
-        resample(
-            data,
-            dt.timedelta(seconds=5),
-            ResamplingFunction.Average,
-            closed="left",
-            label="middle",
-        )
+        Label(99)
 
 
-def test_resample_function_invalid_closed() -> None:
-    """Test the resample function rejects invalid closed values."""
-    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
-    data = [(start, 1.0)]
-
+def test_closed_init_invalid_value() -> None:
+    """Test the Closed enum rejects invalid values."""
     with pytest.raises(ValueError, match="Invalid closed"):
-        resample(
-            data,
-            dt.timedelta(seconds=5),
-            ResamplingFunction.Average,
-            closed="middle",
-            label="left",
-        )
+        Closed(99)
 
 
-def test_resampler_invalid_label() -> None:
-    """Test the resampler rejects invalid labels."""
-    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
-
-    with pytest.raises(ValueError, match="Invalid label"):
-        Resampler(
-            dt.timedelta(seconds=5),
-            ResamplingFunction.Average,
-            max_age_in_intervals=1,
-            start=start,
-            closed="left",
-            label="middle",
-        )
+def test_label_values_members() -> None:
+    """Test the Label enum helpers."""
+    assert Label.values() == [0, 1]
+    assert Label.members() == [("Left", 0), ("Right", 1)]
 
 
-def test_resampler_invalid_closed() -> None:
-    """Test the resampler rejects invalid closed values."""
-    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
-
-    with pytest.raises(ValueError, match="Invalid closed"):
-        Resampler(
-            dt.timedelta(seconds=5),
-            ResamplingFunction.Average,
-            max_age_in_intervals=1,
-            start=start,
-            closed="middle",
-            label="left",
-        )
+def test_closed_values_members() -> None:
+    """Test the Closed enum helpers."""
+    assert Closed.values() == [0, 1]
+    assert Closed.members() == [("Left", 0), ("Right", 1)]
 
 
 def test_resample_function_empty_data() -> None:
@@ -565,8 +547,8 @@ def test_resample_function_empty_data() -> None:
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Average,
-        closed="left",
-        label="left",
+        closed=Closed.Left,
+        label=Label.Left,
     )
 
     assert result == []
@@ -586,8 +568,8 @@ def test_resample_function_with_none_values() -> None:
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Average,
-        closed="left",
-        label="left",
+        closed=Closed.Left,
+        label=Label.Left,
     )
 
     assert len(result) == 2
@@ -595,6 +577,28 @@ def test_resample_function_with_none_values() -> None:
     # Interval [5, 10): values 7,8,9,10 → avg = 8.5
     assert result[0] == (start, 3.5)
     assert result[1] == (start + 5 * step, 8.5)
+
+
+def test_resample_function_interval_with_only_none() -> None:
+    """Test a bucket that contains only None values."""
+    start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+    step = dt.timedelta(seconds=1)
+
+    data: list[tuple[dt.datetime, float | None]] = [
+        (start + i * step, None if i < 5 else float(i + 1)) for i in range(10)
+    ]
+
+    result = resample(
+        data,
+        dt.timedelta(seconds=5),
+        ResamplingFunction.Average,
+        closed=Closed.Left,
+        label=Label.Left,
+    )
+
+    assert len(result) == 2
+    assert result[0] == (start, None)
+    assert result[1] == (start + 5 * step, 8.0)
 
 
 def test_resample_function_sum() -> None:
@@ -608,8 +612,8 @@ def test_resample_function_sum() -> None:
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Sum,
-        closed="left",
-        label="left",
+        closed=Closed.Left,
+        label=Label.Left,
     )
 
     assert len(result) == 2
@@ -630,15 +634,15 @@ def test_resample_function_min_max() -> None:
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Min,
-        closed="left",
-        label="left",
+        closed=Closed.Left,
+        label=Label.Left,
     )
     max_result = resample(
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Max,
-        closed="left",
-        label="left",
+        closed=Closed.Left,
+        label=Label.Left,
     )
 
     assert min_result[0] == (start, 1.0)
@@ -657,8 +661,8 @@ def test_resample_function_single_sample() -> None:
         data,
         dt.timedelta(seconds=5),
         ResamplingFunction.Average,
-        closed="left",
-        label="left",
+        closed=Closed.Left,
+        label=Label.Left,
     )
 
     assert len(result) == 1
@@ -687,8 +691,8 @@ def test_resample_function_all_methods() -> None:
             data,
             dt.timedelta(seconds=5),
             method,
-            closed="left",
-            label="left",
+            closed=Closed.Left,
+            label=Label.Left,
         )
         assert len(result) == 1
         assert result[0][0] == start

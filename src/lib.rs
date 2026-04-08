@@ -142,6 +142,11 @@ impl Sample for SimpleSample {
 ///
 /// A vector of (timestamp, value) tuples representing the resampled data.
 ///
+/// The helper mirrors pandas-style bucket coverage for the input range. In
+/// particular, with [`Closed::Right`], it includes the leading bucket that
+/// ends exactly at the first sample timestamp when that timestamp lies on an
+/// interval boundary.
+///
 /// # Example
 ///
 /// ```rust
@@ -181,16 +186,20 @@ pub fn resample(
     };
 
     let aligned_start = epoch_align(interval, first_ts, None);
-    let end = epoch_align(interval, last_ts, None) + interval;
+    let aligned_end = epoch_align(interval, last_ts, None);
+    let start = if closed == Closed::Right && first_ts == aligned_start {
+        aligned_start - interval
+    } else {
+        aligned_start
+    };
+    let end = if closed == Closed::Right && last_ts == aligned_end {
+        aligned_end
+    } else {
+        aligned_end + interval
+    };
 
-    let mut resampler: Resampler<f64, SimpleSample> = Resampler::new(
-        interval,
-        resampling_function,
-        1,
-        aligned_start,
-        closed,
-        label,
-    );
+    let mut resampler: Resampler<f64, SimpleSample> =
+        Resampler::new(interval, resampling_function, 1, start, closed, label);
     resampler.extend(data.iter().map(|(ts, val)| SimpleSample::new(*ts, *val)));
     resampler
         .resample(end)

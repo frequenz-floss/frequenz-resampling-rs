@@ -233,9 +233,8 @@ impl<
             let input_interval = self.input_interval.unwrap_or(self.interval);
             let drain_end_date =
                 self.start + self.interval - input_interval * self.max_age_in_intervals;
-            interval_buffer.retain(|s| {
-                is_after_retention_edge(&s.timestamp(), &drain_end_date, self.closed)
-            });
+            interval_buffer
+                .retain(|s| is_after_retention_edge(&s.timestamp(), &drain_end_date, self.closed));
 
             // resample the interval_buffer
             res.push(Sample::new(

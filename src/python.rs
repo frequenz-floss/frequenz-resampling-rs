@@ -174,23 +174,169 @@ impl From<ResamplingFunctionF32> for ResamplingFunction<f64, crate::SimpleSample
     }
 }
 
-fn parse_label(label: &str) -> PyResult<Label> {
-    match label {
-        "left" => Ok(Label::Left),
-        "right" => Ok(Label::Right),
-        _ => Err(PyValueError::new_err(
-            "Invalid label, expected 'left' or 'right'",
-        )),
+#[pyclass(eq, eq_int, name = "Closed")]
+#[derive(Clone, Debug, Copy, PartialEq)]
+enum ClosedPy {
+    Left,
+    Right,
+}
+
+#[pymethods]
+impl ClosedPy {
+    #[new]
+    fn new(value: i32) -> PyResult<Self> {
+        value.try_into()
+    }
+
+    #[staticmethod]
+    fn values() -> Vec<i32> {
+        vec![Self::Left.value(), Self::Right.value()]
+    }
+
+    #[staticmethod]
+    fn members() -> Vec<(String, i32)> {
+        vec![
+            (Self::Left.to_string(), Self::Left.value()),
+            (Self::Right.to_string(), Self::Right.value()),
+        ]
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}.{}", "Closed", self)
+    }
+
+    fn __repr__(&self) -> String {
+        format!("<{}: {}>", self.__str__(), self.value())
+    }
+
+    #[getter]
+    fn name(&self) -> String {
+        self.to_string()
+    }
+
+    #[getter]
+    fn value(&self) -> i32 {
+        match self {
+            Self::Left => 0,
+            Self::Right => 1,
+        }
     }
 }
 
-fn parse_closed(closed: &str) -> PyResult<Closed> {
-    match closed {
-        "left" => Ok(Closed::Left),
-        "right" => Ok(Closed::Right),
-        _ => Err(PyValueError::new_err(
-            "Invalid closed value, expected 'left' or 'right'",
-        )),
+impl TryFrom<i32> for ClosedPy {
+    type Error = PyErr;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Left),
+            1 => Ok(Self::Right),
+            _ => Err(PyValueError::new_err("Invalid closed value")),
+        }
+    }
+}
+
+impl Display for ClosedPy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ClosedPy::Left => "Left",
+                ClosedPy::Right => "Right",
+            }
+        )
+    }
+}
+
+impl From<ClosedPy> for Closed {
+    fn from(closed: ClosedPy) -> Self {
+        match closed {
+            ClosedPy::Left => Closed::Left,
+            ClosedPy::Right => Closed::Right,
+        }
+    }
+}
+
+#[pyclass(eq, eq_int, name = "Label")]
+#[derive(Clone, Debug, Copy, PartialEq)]
+enum LabelPy {
+    Left,
+    Right,
+}
+
+#[pymethods]
+impl LabelPy {
+    #[new]
+    fn new(value: i32) -> PyResult<Self> {
+        value.try_into()
+    }
+
+    #[staticmethod]
+    fn values() -> Vec<i32> {
+        vec![Self::Left.value(), Self::Right.value()]
+    }
+
+    #[staticmethod]
+    fn members() -> Vec<(String, i32)> {
+        vec![
+            (Self::Left.to_string(), Self::Left.value()),
+            (Self::Right.to_string(), Self::Right.value()),
+        ]
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}.{}", "Label", self)
+    }
+
+    fn __repr__(&self) -> String {
+        format!("<{}: {}>", self.__str__(), self.value())
+    }
+
+    #[getter]
+    fn name(&self) -> String {
+        self.to_string()
+    }
+
+    #[getter]
+    fn value(&self) -> i32 {
+        match self {
+            Self::Left => 0,
+            Self::Right => 1,
+        }
+    }
+}
+
+impl TryFrom<i32> for LabelPy {
+    type Error = PyErr;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Left),
+            1 => Ok(Self::Right),
+            _ => Err(PyValueError::new_err("Invalid label")),
+        }
+    }
+}
+
+impl Display for LabelPy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                LabelPy::Left => "Left",
+                LabelPy::Right => "Right",
+            }
+        )
+    }
+}
+
+impl From<LabelPy> for Label {
+    fn from(label: LabelPy) -> Self {
+        match label {
+            LabelPy::Left => Label::Left,
+            LabelPy::Right => Label::Right,
+        }
     }
 }
 
@@ -203,11 +349,8 @@ fn parse_closed(closed: &str) -> PyResult<Closed> {
 ///     data: A list of (timestamp, value) tuples to resample. Must be sorted by timestamp.
 ///     interval: The resampling interval.
 ///     method: The resampling function to use for aggregating values within each interval.
-///     closed: Which interval edge is closed for sample membership. Use
-///         `"left"` for `[start, end)` intervals or `"right"` for
-///         `(start, end]` intervals.
-///     label: Which interval edge to use for output timestamps. Use `"left"`
-///         for the interval start or `"right"` for the interval end.
+///     closed: Which interval edge is closed for sample membership.
+///     label: Which interval edge to use for output timestamps.
 ///
 /// Returns:
 ///     A list of (timestamp, value) tuples representing the resampled data.
@@ -217,8 +360,8 @@ fn resample(
     data: Vec<(DateTime<Utc>, Option<f32>)>,
     interval: TimeDelta,
     method: ResamplingFunctionF32,
-    closed: &str,
-    label: &str,
+    closed: ClosedPy,
+    label: LabelPy,
 ) -> PyResult<Vec<(DateTime<Utc>, Option<f32>)>> {
     // Convert f32 to f64 for the Rust implementation
     let data_f64: Vec<(DateTime<Utc>, Option<f64>)> = data
@@ -231,8 +374,8 @@ fn resample(
         &data_f64,
         interval,
         method.into(),
-        parse_closed(closed)?,
-        parse_label(label)?,
+        closed.into(),
+        label.into(),
     );
 
     // Convert f64 back to f32
@@ -257,8 +400,8 @@ impl ResamplerF32 {
         resampling_function: ResamplingFunctionF32,
         max_age_in_intervals: i32,
         start: DateTime<Utc>,
-        closed: &str,
-        label: &str,
+        closed: ClosedPy,
+        label: LabelPy,
     ) -> PyResult<Self> {
         Ok(Self {
             inner: Resampler::new(
@@ -266,8 +409,8 @@ impl ResamplerF32 {
                 resampling_function.into(),
                 max_age_in_intervals,
                 start,
-                parse_closed(closed)?,
-                parse_label(label)?,
+                closed.into(),
+                label.into(),
             ),
         })
     }
@@ -293,6 +436,8 @@ impl ResamplerF32 {
 fn _rust_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<ResamplerF32>()?;
     m.add_class::<ResamplingFunctionF32>()?;
+    m.add_class::<ClosedPy>()?;
+    m.add_class::<LabelPy>()?;
     m.add_function(wrap_pyfunction!(resample, m)?)?;
     Ok(())
 }
