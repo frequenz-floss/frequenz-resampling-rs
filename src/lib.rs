@@ -18,7 +18,7 @@ the buffer.
 
 ```rust
 use chrono::{DateTime, TimeDelta, Utc};
-use frequenz_resampling::{Resampler, ResamplingFunction, Sample};
+use frequenz_resampling::{Closed, Label, Resampler, ResamplingFunction, Sample};
 
 #[derive(Debug, Clone, Default, Copy, PartialEq)]
 pub(crate) struct TestSample {
@@ -44,7 +44,14 @@ impl Sample for TestSample {
 
 let start = DateTime::from_timestamp(0, 0).unwrap();
 let mut resampler: Resampler<f64, TestSample> =
-    Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start, false);
+    Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        Closed::Left,
+        Label::Right,
+    );
 
 let step = TimeDelta::seconds(1);
 // Data starts at t=0 with values 1-10
@@ -87,7 +94,7 @@ mod python;
 mod resampling_function;
 pub use resampling_function::ResamplingFunction;
 
-pub use resampler::{epoch_align, Resampler, Sample};
+pub use resampler::{epoch_align, Closed, Label, Resampler, Sample};
 
 use chrono::{DateTime, TimeDelta, Utc};
 
@@ -124,8 +131,12 @@ impl Sample for SimpleSample {
 /// * `data` - A slice of (timestamp, value) tuples to resample. Must be sorted by timestamp.
 /// * `interval` - The resampling interval.
 /// * `resampling_function` - The function to use for aggregating values within each interval.
-/// * `first_timestamp` - If `true`, output timestamps are set to the start of each interval.
-///   If `false`, output timestamps are set to the end of each interval.
+/// * `closed` - Controls which edge of the interval is closed for sample membership.
+///   Use [`Closed::Left`] for `[start, end)` intervals or [`Closed::Right`] for
+///   `(start, end]` intervals.
+/// * `label` - Controls which edge of the interval is used for output timestamps.
+///   Use [`Label::Left`] for the start of each interval or [`Label::Right`] for
+///   the end of each interval.
 ///
 /// # Returns
 ///
@@ -135,7 +146,7 @@ impl Sample for SimpleSample {
 ///
 /// ```rust
 /// use chrono::{DateTime, TimeDelta, Utc};
-/// use frequenz_resampling::{resample, ResamplingFunction, SimpleSample};
+/// use frequenz_resampling::{resample, Closed, Label, ResamplingFunction};
 ///
 /// let start = DateTime::from_timestamp(0, 0).unwrap();
 /// let step = TimeDelta::seconds(1);
@@ -143,7 +154,13 @@ impl Sample for SimpleSample {
 ///     .map(|i| (start + step * i, Some((i + 1) as f64)))
 ///     .collect();
 ///
-/// let result = resample(&data, TimeDelta::seconds(5), ResamplingFunction::Average, true);
+/// let result = resample(
+///     &data,
+///     TimeDelta::seconds(5),
+///     ResamplingFunction::Average,
+///     Closed::Left,
+///     Label::Left,
+/// );
 /// // Result: [(t=0, 3.0), (t=5, 8.0)]
 /// assert_eq!(result.len(), 2);
 /// assert_eq!(result[0].1, Some(3.0));
@@ -153,7 +170,8 @@ pub fn resample(
     data: &[(DateTime<Utc>, Option<f64>)],
     interval: TimeDelta,
     resampling_function: ResamplingFunction<f64, SimpleSample>,
-    first_timestamp: bool,
+    closed: Closed,
+    label: Label,
 ) -> Vec<(DateTime<Utc>, Option<f64>)> {
     let (Some(first_ts), Some(last_ts)) = (
         data.first().map(|(ts, _)| *ts),
@@ -170,7 +188,8 @@ pub fn resample(
         resampling_function,
         1,
         aligned_start,
-        first_timestamp,
+        closed,
+        label,
     );
     resampler.extend(data.iter().map(|(ts, val)| SimpleSample::new(*ts, *val)));
     resampler

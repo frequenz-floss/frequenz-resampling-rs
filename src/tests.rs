@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::resampler::{epoch_align, Resampler, Sample};
-use crate::{resample, ResamplingFunction};
+use crate::{resample, Closed, Label, ResamplingFunction};
 use chrono::{DateTime, TimeDelta, Utc};
 use num_traits::FromPrimitive;
 
@@ -42,7 +42,14 @@ fn test_resampling(
 ) {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), resampling_function, 1, start, false);
+        Resampler::new(
+            TimeDelta::seconds(5),
+            resampling_function,
+            1,
+            start,
+            Closed::Left,
+            Label::Right,
+        );
     let step = TimeDelta::seconds(1);
     // Data starts at t=0, matching the README example
     // Interval [0, 5) contains t=0,1,2,3,4 with values 1,2,3,4,5
@@ -72,7 +79,14 @@ fn test_resampling_with_none_first(
 ) {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), resampling_function, 1, start, false);
+        Resampler::new(
+            TimeDelta::seconds(5),
+            resampling_function,
+            1,
+            start,
+            Closed::Left,
+            Label::Right,
+        );
     let step = TimeDelta::seconds(1);
     // First sample at t=0 is None
     // Interval [0, 5) contains t=0,1,2,3,4 with values None,2,3,4,5
@@ -102,7 +116,14 @@ fn test_resampling_with_none_all(
 ) {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let mut resampler: Resampler<f64, TestSample> =
-        Resampler::new(TimeDelta::seconds(5), resampling_function, 1, start, false);
+        Resampler::new(
+            TimeDelta::seconds(5),
+            resampling_function,
+            1,
+            start,
+            Closed::Left,
+            Label::Right,
+        );
     let step = TimeDelta::seconds(1);
     // All values are None
     let data = vec![
@@ -381,7 +402,8 @@ fn test_resampling_with_max_age() {
         ResamplingFunction::Average,
         2,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let step = TimeDelta::seconds(1);
     // Data starts at t=0 with values 1-15
@@ -423,7 +445,8 @@ fn test_resampling_with_zero_max_age() {
         ResamplingFunction::Average,
         0,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let step = TimeDelta::seconds(1);
     let data = vec![
@@ -464,7 +487,8 @@ fn test_resampling_with_max_age_older() {
         ResamplingFunction::Average,
         3,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let step = TimeDelta::seconds(1);
     // Data starts at t=0 with values 1-15
@@ -506,7 +530,8 @@ fn test_resampling_with_max_age_batch() {
         ResamplingFunction::Average,
         2,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let step = TimeDelta::seconds(1);
     // Data starts at t=0 with values 1-10
@@ -559,7 +584,8 @@ fn test_resampling_with_gap() {
         ResamplingFunction::Average,
         1,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let step = TimeDelta::seconds(1);
     // Data with gaps: samples at t=0,1,3,4, then gap, then t=16,19
@@ -597,7 +623,8 @@ fn test_resampling_with_slow_data() {
         ResamplingFunction::Average,
         2,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let offset = TimeDelta::milliseconds(500);
     let step = TimeDelta::seconds(2);
@@ -633,7 +660,8 @@ fn test_resampling_with_gap_early_end_date() {
         ResamplingFunction::Average,
         1,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let step = TimeDelta::seconds(1);
     // Same data structure as test_resampling_with_gap, but tests batched resampling
@@ -673,7 +701,8 @@ fn test_empty_buffer() {
         ResamplingFunction::Average,
         1,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
 
     let resampled = resampler.resample(start + TimeDelta::seconds(10));
@@ -705,14 +734,15 @@ fn test_epoch_alignment() {
 }
 
 #[test]
-fn test_first_timestamp_true() {
+fn test_label_left() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let mut resampler: Resampler<f64, TestSample> = Resampler::new(
         TimeDelta::seconds(5),
         ResamplingFunction::Average,
         1,
         start,
-        true,
+        Closed::Left,
+        Label::Left,
     );
     let step = TimeDelta::seconds(1);
     let data = vec![
@@ -733,7 +763,7 @@ fn test_first_timestamp_true() {
     let resampled = resampler.resample(start + step * 10);
     // Intervals: [0, 5) with samples t=0,1,2,3,4 → avg(1,2,3,4,5) = 3.0
     //            [5, 10) with samples t=5,6,7,8,9 → avg(6,7,8,9,10) = 8.0
-    // Output timestamp is at interval start (first_timestamp=true)
+    // Output timestamp is at interval start (label=Label::Left)
     assert_eq!(
         resampled,
         vec![
@@ -743,10 +773,10 @@ fn test_first_timestamp_true() {
     );
 }
 
-/// Test that first_timestamp only affects output timestamps, not aggregated values.
+/// Test that the label only affects output timestamps, not aggregated values.
 /// Both resamplers should produce the same values, just with different timestamps.
 #[test]
-fn test_first_timestamp_same_values() {
+fn test_label_same_values() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let step = TimeDelta::seconds(1);
     let data: Vec<TestSample> = (0..10)
@@ -758,14 +788,16 @@ fn test_first_timestamp_same_values() {
         ResamplingFunction::Average,
         1,
         start,
-        true,
+        Closed::Left,
+        Label::Left,
     );
     let mut resampler_false: Resampler<f64, TestSample> = Resampler::new(
         TimeDelta::seconds(5),
         ResamplingFunction::Average,
         1,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
 
     resampler_true.extend(data.clone());
@@ -788,10 +820,10 @@ fn test_first_timestamp_same_values() {
     }
 }
 
-/// Test that a sample exactly at interval boundary goes to the next interval.
-/// With [start, end) semantics, sample at t=5 should be in interval [5, 10), not [0, 5).
+/// Test that a sample exactly at interval boundary goes to the next interval
+/// for left-closed intervals.
 #[test]
-fn test_sample_at_interval_boundary() {
+fn test_sample_at_interval_boundary_closed_left() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let step = TimeDelta::seconds(1);
 
@@ -800,7 +832,8 @@ fn test_sample_at_interval_boundary() {
         ResamplingFunction::Sum,
         1,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
 
     // Only add samples at boundaries: t=0, t=5
@@ -824,6 +857,40 @@ fn test_sample_at_interval_boundary() {
     );
 }
 
+/// Test that a sample exactly at interval boundary stays in the current
+/// interval for right-closed intervals.
+#[test]
+fn test_sample_at_interval_boundary_closed_right() {
+    let start = DateTime::from_timestamp(0, 0).unwrap();
+    let step = TimeDelta::seconds(1);
+
+    let mut resampler: Resampler<f64, TestSample> = Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Sum,
+        1,
+        start,
+        Closed::Right,
+        Label::Right,
+    );
+
+    let data = vec![
+        TestSample::new(start, Some(10.0)),
+        TestSample::new(start + step * 5, Some(20.0)),
+    ];
+
+    resampler.extend(data);
+
+    let resampled = resampler.resample(start + step * 10);
+
+    assert_eq!(
+        resampled,
+        vec![
+            TestSample::new(DateTime::from_timestamp(5, 0).unwrap(), Some(20.0)),
+            TestSample::new(DateTime::from_timestamp(10, 0).unwrap(), None),
+        ],
+    );
+}
+
 /// Test with data starting mid-interval.
 /// Verifies correct behavior when first sample doesn't align with interval start.
 #[test]
@@ -836,7 +903,8 @@ fn test_data_starting_mid_interval() {
         ResamplingFunction::Average,
         1,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
 
     // Data starts at t=2, not t=0
@@ -865,17 +933,18 @@ fn test_data_starting_mid_interval() {
 }
 
 /// Test that matches the README example exactly.
-/// This test verifies that first_timestamp only affects the output timestamp,
+/// This test verifies that the label only affects the output timestamp,
 /// not the interval grouping semantics.
 #[test]
-fn test_first_timestamp_false() {
+fn test_label_right() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let mut resampler: Resampler<f64, TestSample> = Resampler::new(
         TimeDelta::seconds(5),
         ResamplingFunction::Average,
         1,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let step = TimeDelta::seconds(1);
     let data = vec![
@@ -894,11 +963,11 @@ fn test_first_timestamp_false() {
     resampler.extend(data);
 
     let resampled = resampler.resample(start + step * 10);
-    // Intervals should be the same as first_timestamp=true: [0, 5) and [5, 10)
+    // Intervals should be the same as label=Label::Left: [0, 5) and [5, 10)
     // Only the output timestamp should differ (end of interval instead of start)
     // Interval [0, 5) with samples t=0,1,2,3,4 → avg(1,2,3,4,5) = 3.0
     // Interval [5, 10) with samples t=5,6,7,8,9 → avg(6,7,8,9,10) = 8.0
-    // Output timestamp is at interval end (first_timestamp=false)
+    // Output timestamp is at interval end (label=Label::Right)
     assert_eq!(
         resampled,
         vec![
@@ -999,7 +1068,8 @@ fn test_resampling_non_primitive_average() {
         ResamplingFunction::Average,
         1,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let step = TimeDelta::seconds(1);
     // Data starts at t=0
@@ -1041,7 +1111,8 @@ fn test_resampling_non_primitive_sum() {
         ResamplingFunction::Sum,
         1,
         start,
-        false,
+        Closed::Left,
+        Label::Right,
     );
     let step = TimeDelta::seconds(1);
     // Data starts at t=0
@@ -1099,7 +1170,8 @@ fn test_resample_function_basic() {
         &data,
         TimeDelta::seconds(5),
         ResamplingFunction::Average,
-        true,
+        Closed::Left,
+        Label::Left,
     );
 
     assert_eq!(result.len(), 2);
@@ -1114,7 +1186,7 @@ fn test_resample_function_basic() {
 }
 
 #[test]
-fn test_resample_function_first_timestamp_false() {
+fn test_resample_function_label_right() {
     let start = DateTime::from_timestamp(0, 0).unwrap();
     let step = TimeDelta::seconds(1);
 
@@ -1126,11 +1198,12 @@ fn test_resample_function_first_timestamp_false() {
         &data,
         TimeDelta::seconds(5),
         ResamplingFunction::Average,
-        false,
+        Closed::Left,
+        Label::Right,
     );
 
     assert_eq!(result.len(), 2);
-    // With first_timestamp=false, timestamps are at end of interval
+    // With label=Label::Right, timestamps are at end of interval
     assert_eq!(
         result[0],
         (DateTime::from_timestamp(5, 0).unwrap(), Some(3.0))
@@ -1149,7 +1222,8 @@ fn test_resample_function_empty_data() {
         &data,
         TimeDelta::seconds(5),
         ResamplingFunction::Average,
-        true,
+        Closed::Left,
+        Label::Left,
     );
 
     assert!(result.is_empty());
@@ -1176,7 +1250,8 @@ fn test_resample_function_with_none_values() {
         &data,
         TimeDelta::seconds(5),
         ResamplingFunction::Average,
-        true,
+        Closed::Left,
+        Label::Left,
     );
 
     assert_eq!(result.len(), 2);
@@ -1201,7 +1276,13 @@ fn test_resample_function_sum() {
         .map(|i| (start + step * i, Some((i + 1) as f64)))
         .collect();
 
-    let result = resample(&data, TimeDelta::seconds(5), ResamplingFunction::Sum, true);
+    let result = resample(
+        &data,
+        TimeDelta::seconds(5),
+        ResamplingFunction::Sum,
+        Closed::Left,
+        Label::Left,
+    );
 
     assert_eq!(result.len(), 2);
     // Interval [0, 5): sum(1,2,3,4,5) = 15.0
@@ -1225,8 +1306,20 @@ fn test_resample_function_min_max() {
         .map(|i| (start + step * i, Some((i + 1) as f64)))
         .collect();
 
-    let min_result = resample(&data, TimeDelta::seconds(5), ResamplingFunction::Min, true);
-    let max_result = resample(&data, TimeDelta::seconds(5), ResamplingFunction::Max, true);
+    let min_result = resample(
+        &data,
+        TimeDelta::seconds(5),
+        ResamplingFunction::Min,
+        Closed::Left,
+        Label::Left,
+    );
+    let max_result = resample(
+        &data,
+        TimeDelta::seconds(5),
+        ResamplingFunction::Max,
+        Closed::Left,
+        Label::Left,
+    );
 
     assert_eq!(
         min_result[0],
@@ -1256,7 +1349,8 @@ fn test_resample_function_single_sample() {
         &data,
         TimeDelta::seconds(5),
         ResamplingFunction::Average,
-        true,
+        Closed::Left,
+        Label::Left,
     );
 
     assert_eq!(result.len(), 1);

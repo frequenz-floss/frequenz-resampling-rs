@@ -5,7 +5,7 @@ __all__ = "Resampler", "ResamplingFunction", "resample"
 
 from datetime import datetime, timedelta
 from enum import Enum, unique
-from typing import Optional, Sequence
+from typing import Literal, Optional, Sequence
 
 @unique
 class ResamplingFunction(Enum):
@@ -65,7 +65,8 @@ class Resampler:
         *,
         max_age_in_intervals: int,
         start: datetime,
-        first_timestamp: bool = True,
+        closed: Literal["left", "right"],
+        label: Literal["left", "right"],
     ):
         """
         Initializes a new Resampler object.
@@ -75,10 +76,12 @@ class Resampler:
             resampling_function: The resampling function.
             max_age_in_intervals: The maximum age of a sample in intervals.
             start: The start time of the resampling.
-            first_timestamp: Controls the output timestamp labeling. If `True`,
-                the output timestamp is set to the start of the interval. If `False`,
-                the output timestamp is set to the end of the interval. This does not
-                affect how samples are grouped into intervals. Defaults to `True`.
+            closed: Controls which interval edge is closed for sample
+                membership. Use `"left"` for `[start, end)` intervals or
+                `"right"` for `(start, end]` intervals.
+            label: Controls the output timestamp labeling. Use `"left"` to
+                label each interval with its start or `"right"` to label it
+                with its end.
         """
 
     def push_sample(self, *, timestamp: datetime, value: Optional[float]) -> None:
@@ -110,7 +113,8 @@ def resample(
     interval: timedelta,
     method: ResamplingFunction,
     *,
-    first_timestamp: bool = True,
+    closed: Literal["left", "right"],
+    label: Literal["left", "right"],
 ) -> list[tuple[datetime, Optional[float]]]:
     """
     Resamples a list of timestamp/value pairs in a single call.
@@ -122,8 +126,11 @@ def resample(
         data: A list of (timestamp, value) tuples to resample. Must be sorted by timestamp.
         interval: The resampling interval.
         method: The resampling function to use for aggregating values within each interval.
-        first_timestamp: If True, output timestamps are set to the start of each interval.
-            If False, output timestamps are set to the end of each interval. Defaults to True.
+        closed: Which interval edge is closed for sample membership. Use
+            `"left"` for `[start, end)` intervals or `"right"` for
+            `(start, end]` intervals.
+        label: Which interval edge to use for output timestamps. Use `"left"`
+            for the interval start or `"right"` for the interval end.
 
     Returns:
         A list of (timestamp, value) tuples representing the resampled data.

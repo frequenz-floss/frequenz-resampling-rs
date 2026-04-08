@@ -13,7 +13,7 @@ For simple use cases where you want to resample data in a single call, use the `
 
 ```rust
 use chrono::{DateTime, TimeDelta, Utc};
-use frequenz_resampling::{resample, ResamplingFunction, SimpleSample};
+use frequenz_resampling::{resample, Closed, Label, ResamplingFunction, SimpleSample};
 
 let start = DateTime::from_timestamp(0, 0).unwrap();
 let step = TimeDelta::seconds(1);
@@ -21,7 +21,13 @@ let data: Vec<(DateTime<Utc>, Option<f64>)> = (0..10)
     .map(|i| (start + step * i, Some((i + 1) as f64)))
     .collect();
 
-let result = resample(&data, TimeDelta::seconds(5), ResamplingFunction::Average, true);
+let result = resample(
+    &data,
+    TimeDelta::seconds(5),
+    ResamplingFunction::Average,
+    Closed::Left,
+    Label::Left,
+);
 // Result: [(t=0, 3.0), (t=5, 8.0)]
 ```
 
@@ -36,11 +42,18 @@ The `start` parameter is used to set the start time of the first resampled sampl
 
 ```rust
 use chrono::{DateTime, TimeDelta};
-use frequenz_resampling::{Resampler, ResamplingFunction, Sample};
+use frequenz_resampling::{Closed, Label, Resampler, ResamplingFunction, Sample};
 
 let start = DateTime::from_timestamp(0, 0).unwrap();
 let mut resampler: Resampler<f64, TestSample> =
-    Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start, false);
+    Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        Closed::Left,
+        Label::Right,
+    );
 let step = TimeDelta::seconds(1);
 let data = vec![
     TestSample::new(start, Some(1.0)),
@@ -82,7 +95,13 @@ start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
 step = dt.timedelta(seconds=1)
 data = [(start + i * step, float(i + 1)) for i in range(10)]
 
-result = resample(data, dt.timedelta(seconds=5), ResamplingFunction.Average)
+result = resample(
+    data,
+    dt.timedelta(seconds=5),
+    ResamplingFunction.Average,
+    closed="left",
+    label="left",
+)
 # Result: [(t=0, 3.0), (t=5, 8.0)]
 ```
 
@@ -107,7 +126,8 @@ resampler = Resampler(
     ResamplingFunction.Average,
     max_age_in_intervals=1,
     start=start,
-    first_timestamp=False,
+    closed="left",
+    label="right",
 )
 
 for i in range(10):

@@ -1,4 +1,4 @@
-use crate::{resampler::Resampler, ResamplingFunction, Sample};
+use crate::{resampler::Resampler, Closed, Label, ResamplingFunction, Sample};
 use chrono::{DateTime, TimeDelta, Utc};
 use pyo3::{exceptions::PyValueError, prelude::*};
 use std::fmt::Display;
@@ -174,6 +174,26 @@ impl From<ResamplingFunctionF32> for ResamplingFunction<f64, crate::SimpleSample
     }
 }
 
+fn parse_label(label: &str) -> PyResult<Label> {
+    match label {
+        "left" => Ok(Label::Left),
+        "right" => Ok(Label::Right),
+        _ => Err(PyValueError::new_err(
+            "Invalid label, expected 'left' or 'right'",
+        )),
+    }
+}
+
+fn parse_closed(closed: &str) -> PyResult<Closed> {
+    match closed {
+        "left" => Ok(Closed::Left),
+        "right" => Ok(Closed::Right),
+        _ => Err(PyValueError::new_err(
+            "Invalid closed value, expected 'left' or 'right'",
+        )),
+    }
+}
+
 /// Resamples a list of timestamp/value pairs in a single call.
 ///
 /// This is a convenience function for one-shot resampling without needing to
@@ -183,18 +203,22 @@ impl From<ResamplingFunctionF32> for ResamplingFunction<f64, crate::SimpleSample
 ///     data: A list of (timestamp, value) tuples to resample. Must be sorted by timestamp.
 ///     interval: The resampling interval.
 ///     method: The resampling function to use for aggregating values within each interval.
-///     first_timestamp: If True, output timestamps are set to the start of each interval.
-///         If False, output timestamps are set to the end of each interval. Defaults to True.
+///     closed: Which interval edge is closed for sample membership. Use
+///         `"left"` for `[start, end)` intervals or `"right"` for
+///         `(start, end]` intervals.
+///     label: Which interval edge to use for output timestamps. Use `"left"`
+///         for the interval start or `"right"` for the interval end.
 ///
 /// Returns:
 ///     A list of (timestamp, value) tuples representing the resampled data.
 #[pyfunction]
-#[pyo3(signature = (data, interval, method, *, first_timestamp=true))]
+#[pyo3(signature = (data, interval, method, *, closed, label))]
 fn resample(
     data: Vec<(DateTime<Utc>, Option<f32>)>,
     interval: TimeDelta,
     method: ResamplingFunctionF32,
-    first_timestamp: bool,
+    closed: &str,
+    label: &str,
 ) -> PyResult<Vec<(DateTime<Utc>, Option<f32>)>> {
     // Convert f32 to f64 for the Rust implementation
     let data_f64: Vec<(DateTime<Utc>, Option<f64>)> = data
@@ -203,7 +227,13 @@ fn resample(
         .collect();
 
     // Call the Rust implementation
-    let result = crate::resample(&data_f64, interval, method.into(), first_timestamp);
+    let result = crate::resample(
+        &data_f64,
+        interval,
+        method.into(),
+        parse_closed(closed)?,
+        parse_label(label)?,
+    );
 
     // Convert f64 back to f32
     Ok(result
@@ -221,23 +251,25 @@ struct ResamplerF32 {
 #[pymethods]
 impl ResamplerF32 {
     #[new]
-    #[pyo3(signature = (interval, resampling_function, *, max_age_in_intervals, start, first_timestamp=true))]
+    #[pyo3(signature = (interval, resampling_function, *, max_age_in_intervals, start, closed, label))]
     fn new(
         interval: TimeDelta,
         resampling_function: ResamplingFunctionF32,
         max_age_in_intervals: i32,
         start: DateTime<Utc>,
-        first_timestamp: bool,
-    ) -> Self {
-        Self {
+        closed: &str,
+        label: &str,
+    ) -> PyResult<Self> {
+        Ok(Self {
             inner: Resampler::new(
                 interval,
                 resampling_function.into(),
                 max_age_in_intervals,
                 start,
-                first_timestamp,
+                parse_closed(closed)?,
+                parse_label(label)?,
             ),
-        }
+        })
     }
 
     #[pyo3(signature = (*, timestamp, value))]
