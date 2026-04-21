@@ -12,6 +12,26 @@ use num_traits::FromPrimitive;
 use std::fmt::Debug;
 use std::ops::Div;
 
+/// Controls which edge of an interval is used as the output timestamp label.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Label {
+    /// Label each bucket with its left edge, i.e. the interval start.
+    #[default]
+    Left,
+    /// Label each bucket with its right edge, i.e. the interval end.
+    Right,
+}
+
+/// Controls which edge of an interval is closed for sample membership.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Closed {
+    /// Intervals are left-closed and right-open, i.e. `[start, end)`.
+    #[default]
+    Left,
+    /// Intervals are left-open and right-closed, i.e. `(start, end]`.
+    Right,
+}
+
 /// The Sample trait represents a single sample in a time series.
 pub trait Sample: Clone + Debug + Default {
     type Value;
@@ -104,16 +124,23 @@ pub struct Resampler<
     input_start: Option<DateTime<Utc>>,
     /// The interval between the first and the second sample in the buffer
     input_interval: Option<TimeDelta>,
-    /// Whether the resampled timestamp should be the first timestamp (if
-    /// `first_timestamp` is `true`) or the last timestamp (if
-    /// `first_timestamp` is `false`) in the buffer.
-    /// If `first_timestamp` is `true`, the resampled timestamp will be the
-    /// timestamp of the first sample in the buffer and the aggregation will
-    /// be done with the samples that are `interval` in the future.
-    /// If `first_timestamp` is `false`, the resampled timestamp will be the
-    /// timestamp of the last sample in the buffer and the aggregation will
-    /// be done with the samples that are `interval` in the past.
-    first_timestamp: bool,
+    /// Controls which edge of an interval is closed for sample membership.
+    closed: Closed,
+    /// Controls the output timestamp labeling for resampled samples.
+    ///
+    /// This parameter only affects how output timestamps are labeled, not how
+    /// samples are grouped into intervals.
+    ///
+    /// - If `label` is [`Label::Left`], the output timestamp is set to the
+    ///   start of the interval.
+    /// - If `label` is [`Label::Right`], the output timestamp is set to the
+    ///   end of the interval.
+    ///
+    /// For example, with an interval of 5 seconds starting at t=0:
+    /// - Interval `[0, 5)` contains samples with timestamps 0, 1, 2, 3, 4
+    /// - If `label=Label::Left`: output timestamp = 0
+    /// - If `label=Label::Right`: output timestamp = 5
+    label: Label,
 }
 
 impl<
@@ -128,7 +155,8 @@ impl<
         resampling_function: ResamplingFunction<T, S>,
         max_age_in_intervals: i32,
         start: DateTime<Utc>,
-        first_timestamp: bool,
+        closed: Closed,
+        label: Label,
     ) -> Self {
         let aligned_start = epoch_align(interval, start, None);
         Self {
@@ -136,7 +164,8 @@ impl<
             resampling_function,
             max_age_in_intervals,
             start: aligned_start,
-            first_timestamp,
+            closed,
+            label,
             ..Default::default()
         }
     }
@@ -163,10 +192,9 @@ impl<
         let mut buffer_iter = self.buffer.iter();
         let mut next_sample: Option<&S> = buffer_iter.next();
         self.input_start = next_sample.map(|s| s.timestamp());
-        let offset = if self.first_timestamp {
-            TimeDelta::zero()
-        } else {
-            self.interval
+        let offset = match self.label {
+            Label::Left => TimeDelta::zero(),
+            Label::Right => self.interval,
         };
 
         // loop over the intervals
@@ -174,10 +202,11 @@ impl<
             // loop over the samples in the buffer
             while next_sample
                 .map(|s| {
-                    is_left_of_buffer_edge(
-                        self.first_timestamp,
+                    is_in_interval(
                         &s.timestamp(),
+                        &self.start,
                         &(self.start + self.interval),
+                        self.closed,
                     )
                 })
                 .unwrap_or(false)
@@ -204,9 +233,8 @@ impl<
             let input_interval = self.input_interval.unwrap_or(self.interval);
             let drain_end_date =
                 self.start + self.interval - input_interval * self.max_age_in_intervals;
-            interval_buffer.retain(|s| {
-                is_right_of_buffer_edge(self.first_timestamp, &s.timestamp(), &drain_end_date)
-            });
+            interval_buffer
+                .retain(|s| is_after_retention_edge(&s.timestamp(), &drain_end_date, self.closed));
 
             // resample the interval_buffer
             res.push(Sample::new(
@@ -221,9 +249,8 @@ impl<
         // Remove samples from buffer that are older than max_age
         let interval = self.input_interval.unwrap_or(self.interval);
         let drain_end_date = end - interval * self.max_age_in_intervals;
-        self.buffer.retain(|s| {
-            is_right_of_buffer_edge(self.first_timestamp, &s.timestamp(), &drain_end_date)
-        });
+        self.buffer
+            .retain(|s| is_after_retention_edge(&s.timestamp(), &drain_end_date, self.closed));
 
         res
     }
@@ -246,7 +273,7 @@ impl<
 }
 
 /// Aligns a timestamp to the epoch of the resampling interval.
-pub(crate) fn epoch_align(
+pub fn epoch_align(
     interval: TimeDelta,
     timestamp: DateTime<Utc>,
     alignment_timestamp: Option<DateTime<Utc>>,
@@ -259,26 +286,27 @@ pub(crate) fn epoch_align(
     .unwrap_or(timestamp)
 }
 
-fn is_left_of_buffer_edge(
-    first_timestamp: bool,
+/// Checks whether a timestamp belongs to the current interval.
+fn is_in_interval(
     timestamp: &DateTime<Utc>,
-    edge_timestamp: &DateTime<Utc>,
+    _start: &DateTime<Utc>,
+    end: &DateTime<Utc>,
+    closed: Closed,
 ) -> bool {
-    if first_timestamp {
-        timestamp < edge_timestamp
-    } else {
-        timestamp <= edge_timestamp
+    match closed {
+        Closed::Left => timestamp < end,
+        Closed::Right => timestamp <= end,
     }
 }
 
-fn is_right_of_buffer_edge(
-    first_timestamp: bool,
+/// Checks if a timestamp should be retained in the buffer.
+fn is_after_retention_edge(
     timestamp: &DateTime<Utc>,
     edge_timestamp: &DateTime<Utc>,
+    closed: Closed,
 ) -> bool {
-    if first_timestamp {
-        timestamp >= edge_timestamp
-    } else {
-        timestamp > edge_timestamp
+    match closed {
+        Closed::Left => timestamp >= edge_timestamp,
+        Closed::Right => timestamp > edge_timestamp,
     }
 }

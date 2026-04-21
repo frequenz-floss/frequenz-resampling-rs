@@ -4,8 +4,11 @@
 """Frequenz Resampling Python Bindings."""
 
 from ._rust_backend import (  # noqa: F401, F403 # pylint: disable=E0401
+    Closed,
+    Label,
     Resampler,
     ResamplingFunction,
+    resample,
 )
 
-__all__ = ["Resampler", "ResamplingFunction"]
+__all__ = ["Closed", "Label", "Resampler", "ResamplingFunction", "resample"]

@@ -7,7 +7,33 @@ This project is the rust resampler for resampling a stream of samples to a given
 
 ## Usage in Rust
 
-To resample a vector of samples to a given interval, you can use the `Resampler` struct.
+### One-Shot Resampling
+
+For simple use cases where you want to resample data in a single call, use the `resample()` function:
+
+```rust
+use chrono::{DateTime, TimeDelta, Utc};
+use frequenz_resampling::{resample, Closed, Label, ResamplingFunction, SimpleSample};
+
+let start = DateTime::from_timestamp(0, 0).unwrap();
+let step = TimeDelta::seconds(1);
+let data: Vec<(DateTime<Utc>, Option<f64>)> = (0..10)
+    .map(|i| (start + step * i, Some((i + 1) as f64)))
+    .collect();
+
+let result = resample(
+    &data,
+    TimeDelta::seconds(5),
+    ResamplingFunction::Average,
+    Closed::Left,
+    Label::Left,
+);
+// Result: [(t=0, 3.0), (t=5, 8.0)]
+```
+
+### Stateful Resampling
+
+For streaming use cases where you need to push samples over time, use the `Resampler` struct.
 The construction of a resampler expects an interval (`TimeDelta`) and a
 `ResamplingFunction`.
 Moreover, the `max_age_in_intervals` parameter can be used to control the maximum age of a sample.
@@ -16,11 +42,18 @@ The `start` parameter is used to set the start time of the first resampled sampl
 
 ```rust
 use chrono::{DateTime, TimeDelta};
-use frequenz_resampling::{Resampler, ResamplingFunction, Sample};
+use frequenz_resampling::{Closed, Label, Resampler, ResamplingFunction, Sample};
 
 let start = DateTime::from_timestamp(0, 0).unwrap();
 let mut resampler: Resampler<f64, TestSample> =
-    Resampler::new(TimeDelta::seconds(5), ResamplingFunction::Average, 1, start, false);
+    Resampler::new(
+        TimeDelta::seconds(5),
+        ResamplingFunction::Average,
+        1,
+        start,
+        Closed::Left,
+        Label::Right,
+    );
 let step = TimeDelta::seconds(1);
 let data = vec![
     TestSample::new(start, Some(1.0)),
@@ -50,7 +83,31 @@ assert_eq!(resampled, expected);
 
 ## Usage in Python
 
-To resample a stream of samples to a given interval, you can use the `Resampler`
+### One-Shot Resampling
+
+For simple use cases where you want to resample data in a single call, use the `resample()` function:
+
+```python
+import datetime as dt
+from frequenz.resampling import Closed, Label, resample, ResamplingFunction
+
+start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+step = dt.timedelta(seconds=1)
+data = [(start + i * step, float(i + 1)) for i in range(10)]
+
+result = resample(
+    data,
+    dt.timedelta(seconds=5),
+    ResamplingFunction.Average,
+    closed=Closed.Left,
+    label=Label.Left,
+)
+# Result: [(t=0, 3.0), (t=5, 8.0)]
+```
+
+### Stateful Resampling
+
+For streaming use cases where you need to push samples over time, use the `Resampler`
 class.
 The construction of a resampler expects an interval (`datetime.timedelta`),
 a `ResamplingFunction`, a `max_age_in_intervals` parameter to control the
@@ -59,7 +116,7 @@ first resampled sample.
 
 ```python
 import datetime as dt
-from frequenz.resampling import Resampler, ResamplingFunction
+from frequenz.resampling import Closed, Label, Resampler, ResamplingFunction
 
 
 start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
@@ -69,7 +126,8 @@ resampler = Resampler(
     ResamplingFunction.Average,
     max_age_in_intervals=1,
     start=start,
-    first_timestamp=False,
+    closed=Closed.Left,
+    label=Label.Right,
 )
 
 for i in range(10):

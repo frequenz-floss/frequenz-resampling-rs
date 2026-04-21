@@ -1,12 +1,13 @@
 name: Python Test PR
 
 on:
+  merge_group:
   pull_request:
 
 env:
   # Please make sure this version is included in the `matrix`, as the
   # `matrix` section can't use `env`, so it must be entered manually
-  DEFAULT_PYTHON_VERSION: '3.11'
+  DEFAULT_PYTHON_VERSION: "3.11"
   # It would be nice to be able to also define a DEFAULT_UBUNTU_VERSION
   # but sadly `env` can't be used either in `runs-on`.
 
