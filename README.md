@@ -4,8 +4,11 @@
 [<img alt="Crates.io" src="https://img.shields.io/crates/v/frequenz-resampling">](https://crates.io/crates/frequenz-resampling)
 
 This project is the rust resampler for resampling a stream of samples to a given interval.
+For the Python package, see the
+[`frequenz-resampling-python`](https://github.com/frequenz-floss/frequenz-resampling-python)
+repository.
 
-## Usage in Rust
+## Usage
 
 ### One-Shot Resampling
 
@@ -78,67 +81,4 @@ let expected = vec![
 ];
 
 assert_eq!(resampled, expected);
-```
-
-
-## Usage in Python
-
-### One-Shot Resampling
-
-For simple use cases where you want to resample data in a single call, use the `resample()` function:
-
-```python
-import datetime as dt
-from frequenz.resampling import Closed, Label, resample, ResamplingFunction
-
-start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
-step = dt.timedelta(seconds=1)
-data = [(start + i * step, float(i + 1)) for i in range(10)]
-
-result = resample(
-    data,
-    dt.timedelta(seconds=5),
-    ResamplingFunction.Average,
-    closed=Closed.Left,
-    label=Label.Left,
-)
-# Result: [(t=0, 3.0), (t=5, 8.0)]
-```
-
-### Stateful Resampling
-
-For streaming use cases where you need to push samples over time, use the `Resampler`
-class.
-The construction of a resampler expects an interval (`datetime.timedelta`),
-a `ResamplingFunction`, a `max_age_in_intervals` parameter to control the
-maximum age of a sample (skips all samples if set to `0`), and a `start` parameter to set the start time of the
-first resampled sample.
-
-```python
-import datetime as dt
-from frequenz.resampling import Closed, Label, Resampler, ResamplingFunction
-
-
-start = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
-step = dt.timedelta(seconds=1)
-resampler = Resampler(
-    dt.timedelta(seconds=5),
-    ResamplingFunction.Average,
-    max_age_in_intervals=1,
-    start=start,
-    closed=Closed.Left,
-    label=Label.Right,
-)
-
-for i in range(10):
-    resampler.push_sample(timestamp=start + i * step, value=i + 1)
-
-expected = [
-    (start + 5 * step, 3.0),
-    (start + 10 * step, 8.0),
-]
-
-resampled = resampler.resample(start + 10 * step)
-
-assert resampled == expected
 ```

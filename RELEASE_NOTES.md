@@ -1,18 +1,21 @@
 # Frequenz Resampling Release Notes
 
-## Breaking Changes
+## Summary
 
-- **API Refactoring**: Replaced the single boolean `first_timestamp` parameter with two explicit parameters in `Resampler` and `resample()`:
-  - `closed` (`Closed` enum in Rust, `"left"` or `"right"` string in Python): Controls which interval edge is closed for sample membership.
-  - `label` (`Label` enum in Rust, `"left"` or `"right"` string in Python): Controls which interval edge is used for output timestamps.
-  - This improves API clarity by explicitly separating interval membership semantics from output timestamp labeling.
+<!-- Here goes a general summary of what this release is about -->
 
-## Bug Fixes
+## Upgrading
 
-- Fixed the interval timestamp labeling option to only affect output timestamp labeling, not interval grouping. Previously, using the right-edge label would shift interval boundaries, causing the first sample at `t=0` to be excluded. Now intervals are consistently `[start, end)` regardless of which label is used.
+- Python packaging and bindings have moved out of this repository. Python users
+  should use the
+  [`frequenz-resampling-python`](https://github.com/frequenz-floss/frequenz-resampling-python)
+  repository instead. This repository now documents and ships the Rust crate
+  only.
 
 ## New Features
 
-- `ResamplingFunction` now implements `Clone`.
-- Added `resample()` function for one-shot resampling without managing a `Resampler` instance. Available in both Rust and Python.
-- New `Closed` and `Label` enums provide explicit control over interval semantics and output timestamp labeling.
+<!-- Here goes the main new features and examples or instructions on how to use them -->
+
+## Bug Fixes
+
+<!-- Here goes notable bug fixes that are worth a special mention or explanation -->
