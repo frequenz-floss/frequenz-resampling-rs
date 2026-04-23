@@ -8,17 +8,9 @@ license = "MIT"
 
 [lib]
 name = "frequenz_resampling"
-crate-type = ["cdylib", "rlib"]
-
-[features]
-python = ["pyo3"]
 
 [dependencies]
 itertools = "0.14"
 num-traits = "0.2"
 chrono = "0.4"
 log = "0.4"
-pyo3 = { version = "0.27", features = [
-  "extension-module",
-  "chrono",
-], optional = true }
